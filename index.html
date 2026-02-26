@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>آموزش درس</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Tahoma, sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background-color: #ffffff;
+            width: 800px;
+            max-width: 90%;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .content {
+            width: 60%;
+            line-height: 2;
+            color: #333;
+        }
+
+        .auth-box {
+            width: 35%;
+            background-color: #f5f7ff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .auth-box h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #2575fc;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background-color: #2575fc;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1a5edb;
+        }
+
+        .switch {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- متن توضیحی سمت چپ -->
+    <div class="content">
+        <h2>به سایت ما خوش آمدید</h2>
+        <p>
+            شما به سادگی می‌توانید در این سایت ثبت‌نام کنید یا وارد حساب کاربری خود شوید.
+            این سایت یک پلتفرم آموزشی است که شامل دوره‌های مختلف و محتوای آموزشی می‌باشد.
+        </p>
+        <p>
+             هدف این سایت این است که به شما چیز های باحال و خوب یاد بدهد.
+        </p>
+    </div>
+
+    <!-- باکس ورود / ثبت‌نام -->
+    <div class="auth-box">
+        <h3>ورود</h3>
+        <input id="username" type="text" placeholder="نام کاربری">
+        <input id="password" type="password" placeholder="رمز عبور">
+        <button onclick="login()">ورود</button>
+
+        <div class="switch">
+            حساب ندارید؟ <strong><a href="signup.html">ثبت نام</a></strong>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+<script>
+function login() {
+    let username = document.getElementById("username").value;
+    let password = document.getElementById("password").value;
+
+    if (!username || !password) {
+        alert("لطفاً نام کاربری و رمز عبور را وارد کنید");
+        return;
+    }
+
+    // دریافت لیست کاربران از localStorage
+    let users = JSON.parse(localStorage.getItem("users") || "[]");
+    
+    // جستجوی کاربر با یوزرنیم و پسورد وارد شده
+    let user = users.find(u => u.username === username && u.password === password);
+    
+    if (!user) {
+        alert("❌ نام کاربری یا رمز عبور اشتباه است");
+        return;
+    }
+
+    // ذخیره نام کاربری برای استفاده در صفحات دیگر
+    localStorage.setItem("username", username);
+
+    // پرسیدن از کاربر برای ذخیره یوزرنیم و پسورد
+    let saveCredentials = confirm("آیا می‌خواهید نام کاربری و رمز عبور شما ذخیره شود؟");
+    
+    if (saveCredentials) {
+        localStorage.setItem("savedUsername", username);
+        localStorage.setItem("savedPassword", password);
+    } else {
+        // اگر کاربر نخواست ذخیره کند، اطلاعات قبلی را پاک می‌کنیم
+        localStorage.removeItem("savedUsername");
+        localStorage.removeItem("savedPassword");
+    }
+
+    // انتقال به صفحه اکانت
+    window.location.href = "Account.html";
+}
+
+// پر کردن خودکار فیلدها در صورت وجود اطلاعات ذخیره شده
+window.onload = function() {
+    let savedUsername = localStorage.getItem("savedUsername");
+    let savedPassword = localStorage.getItem("savedPassword");
+    
+    if (savedUsername) {
+        document.getElementById("username").value = savedUsername;
+    }
+    
+    if (savedPassword) {
+        document.getElementById("password").value = savedPassword;
+    }
+}
+</script>

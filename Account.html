@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>پنل آموزشی</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Tahoma, sans-serif;
+            background-color: #f4f6fb;
+            color: #333;
+        }
+
+        /* هدر */
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #3b82f6);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .logout {
+            background-color: #ef4444;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* خوش آمدگویی */
+        .welcome {
+            padding: 30px;
+        }
+
+        .welcome span {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        /* دوره‌ها */
+        .courses {
+            padding: 0 30px 30px;
+        }
+
+        .courses h3 {
+            margin-bottom: 15px;
+        }
+
+        .course-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .course {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .course img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background-color: #ddd;
+        }
+
+        .course-content {
+            padding: 15px;
+        }
+
+        .course-content h4 {
+            margin: 0 0 10px;
+        }
+
+        .course-content p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .course-content button {
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background-color: #4f46e5;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* ویدیو نمونه */
+        .videos {
+            padding: 0 30px 40px;
+        }
+
+        .video-box {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        video {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- هدر -->
+<div class="header">
+    <h2>پنل آموزشی</h2>
+    <button class="logout" onclick="logout()">خروج</button>
+</div>
+
+<!-- خوش آمدگویی -->
+<div class="welcome">
+    خوش آمدید <span id="username">دانشجو</span> 👋  
+    <p>دوره‌های آموزشی خود را ادامه دهید</p>
+</div>
+
+<!-- دوره‌ها -->
+<div class="courses">
+    <h3>📘 دوره‌های شما</h3>
+    <div class="course-list">
+
+        <div class="course">
+            <img src="https://image.torob.com/base/images/IL/70/IL70vwPKSuVvKrU-.jpg_/0x176.jpg" alt="دوره آموزش شطرنج">
+            <div class="course-content">
+                <h4>آموزش شطرنج</h4>
+                <p>یادگیری قوانین، تاکتیک‌ها و استراتژی‌های شطرنج از پایه</p>
+               <button onclick="location.href='chess.html'">مشاهده دوره</button>
+
+            </div>
+        </div>
+
+        <div class="course">
+            <img src="https://image.torob.com/base/images/D1/On/D1Onuc20Ef0cLLOx.jpg_/0x176.jpg" alt="دوره آموزش فوتبال">
+            <div class="course-content">
+                <h4>آموزش فوتبال</h4>
+                <p>یادگیری تکنیک‌ها، تاکتیک‌ها و قوانین فوتبال</p>
+                <button onclick="alert('دوره در حال آماده‌سازی است')">مشاهده درس</button>
+            </div>
+        </div>
+
+        <div class="course">
+            <img src="https://image.torob.com/base/images/Vd/NS/VdNS-x8_pSlRLb-D.jpg_/0x244.jpg" alt="دوره آموزش پینگ‌پنگ">
+            <div class="course-content">
+                <h4>آموزش پینگ‌پنگ</h4>
+                <p>یادگیری تکنیک‌ها و استراتژی‌های پینگ‌پنگ</p>
+                <button onclick="alert('دوره در حال آماده‌سازی است')">مشاهده درس</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ویدیو نمونه -->
+<div class="videos">
+    <h3>🎥 ویدیو نمونه</h3>
+    <div class="video-box">
+        <p>نمونه یکی از درس‌های شطرنج</p>
+        <video controls>
+            <source src="https://s35.namasha.com/videos/7411009351-1080p.mp4" type="video/mp4">
+            مرورگر شما از ویدیو پشتیبانی نمی‌کند
+        </video>
+    </div>
+</div>
+
+<script>
+    // نمایش نام کاربر
+    document.getElementById("username").innerText =
+        localStorage.getItem("username") || "دانشجو";
+
+    function logout() {
+        localStorage.removeItem("username");
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+</html>

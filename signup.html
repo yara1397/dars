@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ثبت نام</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Tahoma, sans-serif;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box {
+            background-color: white;
+            width: 400px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            text-align: center;
+            color: #11998e;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background-color: #11998e;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0f7f76;
+        }
+
+        .message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .back {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .back a {
+            text-decoration: none;
+            color: #11998e;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>ثبت نام</h2>
+
+    <input type="text" id="username" placeholder="نام کاربری">
+    <input type="password" id="password" placeholder="رمز عبور">
+    <input type="password" id="repassword" placeholder="تکرار رمز عبور">
+
+    <button onclick="signup()">ثبت نام</button>
+
+    <div id="message" class="message"></div>
+
+    <div class="back">
+        <a href="index.html">بازگشت به صفحه ورود</a>
+    </div>
+</div>
+
+<script>
+    function signup() {
+        let username = document.getElementById("username").value;
+        let password = document.getElementById("password").value;
+        let repassword = document.getElementById("repassword").value;
+        let message = document.getElementById("message");
+
+        if (!username || !password || !repassword) {
+            message.innerHTML = "❌ لطفاً همه فیلدها را پر کنید";
+            message.className = "message error";
+            return;
+        }
+
+        if (password !== repassword) {
+            message.innerHTML = "❌ رمز عبور و تکرار آن یکسان نیست";
+            message.className = "message error";
+            return;
+        }
+
+        // دریافت لیست کاربران از localStorage
+        let users = JSON.parse(localStorage.getItem("users") || "[]");
+        
+        // چک کردن اینکه آیا این یوزرنیم قبلاً ثبت شده است
+        if (users.find(u => u.username === username)) {
+            message.innerHTML = "❌ این نام کاربری قبلاً استفاده شده است";
+            message.className = "message error";
+            return;
+        }
+
+        // اضافه کردن کاربر جدید
+        users.push({
+            username: username,
+            password: password
+        });
+        
+        // ذخیره لیست کاربران
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("username", username);
+        
+        message.innerHTML = "✅ ثبت نام شما با موفقیت انجام شد";
+        message.className = "message success";
+        
+        // انتقال به صفحه اکانت بعد از 1 ثانیه
+        setTimeout(function() {
+            window.location.href = "Account.html";
+        }, 2000);
+    }
+</script>
+
+</body>
+</html>

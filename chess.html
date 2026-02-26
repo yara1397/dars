@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>آموزش شطرنج</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Tahoma, sans-serif;
+            background-color: #f4f6fb;
+            color: #333;
+        }
+
+        /* هدر */
+        .header {
+            background: linear-gradient(135deg, #111827, #374151);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header button {
+            background-color: #3b82f6;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* معرفی */
+        .intro {
+            padding: 30px;
+            background-color: white;
+            margin: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        .intro h2 {
+            margin-top: 0;
+        }
+
+        /* ویدیو */
+        .video-section {
+            margin: 0 30px 30px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        video {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        /* جلسات */
+        .lessons {
+            margin: 0 30px 40px;
+        }
+
+        .lesson-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .lesson {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lesson:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            background-color: #f8f9ff;
+        }
+
+        .lesson.active {
+            background-color: #e0e7ff;
+            border: 2px solid #3b82f6;
+        }
+
+        .lesson span {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<!-- هدر -->
+<div class="header">
+    <h2>♟️ آموزش شطرنج</h2>
+    <button onclick="back()">بازگشت به پنل</button>
+</div>
+
+<!-- معرفی -->
+<div class="intro">
+    <h2>درباره این دوره</h2>
+    <p>
+        در این دوره آموزشی، شطرنج را از پایه تا سطح متوسط یاد می‌گیرید.
+        قوانین، مهره‌ها، تاکتیک‌ها و استراتژی‌های مهم به صورت ساده آموزش داده می‌شوند.
+    </p>
+</div>
+
+
+
+<!-- جلسات -->
+<div class="lessons">
+    <h3>📘 جلسات دوره</h3>
+    <div class="lesson-list">
+
+        <div class="lesson" onclick="showLesson(1)" id="lesson1">
+            <span>جلسه 1:</span>
+            <p>آشنایی با صفحه و مهره‌های شطرنج</p>
+        </div>
+
+        <div class="lesson" onclick="showLesson(2)" id="lesson2">
+            <span>جلسه 2:</span>
+            <p>قوانین حرکت مهره‌ها</p>
+
+        </div>
+
+        <div class="lesson" onclick="showLesson(3)" id="lesson3">
+            <span>جلسه 3:</span>
+            <p>کیش و کیش‌مات</p>
+        </div>
+    </div>
+</div>
+
+<!-- ویدیو -->
+<div class="video-section">
+    <h3 id="videoTitle">ویدیو آموزشی - جلسه 1</h3>
+       <video id="lessonVideo" controls>
+           <source src="https://s35.namasha.com/videos/7411009351-1080p.mp4" type="video/mp4">
+           مرورگر شما از ویدیو پشتیبانی نمی‌کند
+       </video>
+   </div>
+
+<script>
+    function back() {
+        window.location.href = "Account.html";
+    }
+
+    // نمایش جلسه انتخاب شده
+    function showLesson(lessonNumber) {
+        // حذف کلاس active از همه جلسات
+        for (let i = 1; i <= 3; i++) {
+            document.getElementById("lesson" + i).classList.remove("active");
+        }
+        
+        // اضافه کردن کلاس active به جلسه انتخاب شده
+        document.getElementById("lesson" + lessonNumber).classList.add("active");
+        
+        // تغییر عنوان ویدیو
+        const titles = {
+            1: "ویدیو آموزشی - جلسه 1: آشنایی با صفحه و مهره‌های شطرنج",
+            2: "ویدیو آموزشی - جلسه 2: قوانین حرکت مهره‌ها",
+            3: "ویدیو آموزشی - جلسه 3: کیش و کیش‌مات"
+        };
+        const videos = {
+            1: "https://s35.namasha.com/videos/7411009351-1080p.mp4",
+            2: "https://s36.namasha.com/videos/7411200535-1080p.mp4",
+            3: "https://s16.namasha.com/videos/7271264408-720p.mp4",
+        };
+
+        
+        document.getElementById("videoTitle").innerText = titles[lessonNumber];
+        
+        // اسکرول به ویدیو
+        document.getElementById("lessonVideo").scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("lessonVideo").src = videos[lessonNumber];
+        document.getElementById("lessonVideo").src = videos[lessonNumber];
+    }
+    
+    // نمایش جلسه 1 به صورت پیش‌فرض
+    window.onload = function() {
+        showLesson(1);
+    }
+</script>
+
+</body>
+</html>
