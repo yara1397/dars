@@ -132,17 +132,9 @@ function login() {
     // ذخیره نام کاربری برای استفاده در صفحات دیگر
     localStorage.setItem("username", username);
 
-    // پرسیدن از کاربر برای ذخیره یوزرنیم و پسورد
-    let saveCredentials = confirm("آیا می‌خواهید نام کاربری و رمز عبور شما ذخیره شود؟");
-    
-    if (saveCredentials) {
-        localStorage.setItem("savedUsername", username);
-        localStorage.setItem("savedPassword", password);
-    } else {
-        // اگر کاربر نخواست ذخیره کند، اطلاعات قبلی را پاک می‌کنیم
-        localStorage.removeItem("savedUsername");
-        localStorage.removeItem("savedPassword");
-    }
+    // ذخیره خودکار یوزرنیم و پسورد بدون پرسیدن
+    localStorage.setItem("savedUsername", username);
+    localStorage.setItem("savedPassword", password);
 
     // انتقال به صفحه اکانت
     window.location.href = "Account.html";
