@@ -11,7 +11,7 @@
             margin: 0;
             font-family: Tahoma, sans-serif;
             background: linear-gradient(135deg, #11998e, #38ef7d);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -38,6 +38,13 @@
             border-radius: 6px;
             border: 1px solid #ccc;
             font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #11998e;
+            box-shadow: 0 0 0 2px rgba(17, 153, 142, 0.15);
         }
 
         button {
@@ -87,6 +94,8 @@
     <h2>ثبت نام</h2>
 
     <input type="text" id="username" placeholder="نام کاربری">
+    <input type="email" id="email" placeholder="ایمیل (مثال: example@email.com)" dir="ltr">
+    <input type="tel" id="phone" placeholder="شماره موبایل (مثال: 09123456789)" dir="ltr">
     <input type="password" id="password" placeholder="رمز عبور">
     <input type="password" id="repassword" placeholder="تکرار رمز عبور">
 
@@ -101,17 +110,37 @@
 
 <script>
     function signup() {
-        let username = document.getElementById("username").value;
+        let username = document.getElementById("username").value.trim();
+        let email = document.getElementById("email").value.trim();
+        let phone = document.getElementById("phone").value.trim();
         let password = document.getElementById("password").value;
         let repassword = document.getElementById("repassword").value;
         let message = document.getElementById("message");
 
-        if (!username || !password || !repassword) {
+        // بررسی پر بودن همه فیلدها
+        if (!username || !email || !phone || !password || !repassword) {
             message.innerHTML = "❌ لطفاً همه فیلدها را پر کنید";
             message.className = "message error";
             return;
         }
 
+        // اعتبارسنجی ایمیل
+        let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            message.innerHTML = "❌ فرمت ایمیل وارد شده صحیح نیست";
+            message.className = "message error";
+            return;
+        }
+
+        // اعتبارسنجی شماره موبایل ایران (09xxxxxxxxx)
+        let phoneRegex = /^09[0-9]{9}$/;
+        if (!phoneRegex.test(phone)) {
+            message.innerHTML = "❌ شماره موبایل باید با 09 شروع شود و ۱۱ رقم باشد";
+            message.className = "message error";
+            return;
+        }
+
+        // بررسی تطابق رمز عبور
         if (password !== repassword) {
             message.innerHTML = "❌ رمز عبور و تکرار آن یکسان نیست";
             message.className = "message error";
@@ -121,9 +150,21 @@
         // دریافت لیست کاربران از localStorage
         let users = JSON.parse(localStorage.getItem("users") || "[]");
         
-        // چک کردن اینکه آیا این یوزرنیم قبلاً ثبت شده است
+        // چک کردن تکراری نبودن نام کاربری، ایمیل و موبایل
         if (users.find(u => u.username === username)) {
             message.innerHTML = "❌ این نام کاربری قبلاً استفاده شده است";
+            message.className = "message error";
+            return;
+        }
+
+        if (users.find(u => u.email === email)) {
+            message.innerHTML = "❌ این ایمیل قبلاً ثبت شده است";
+            message.className = "message error";
+            return;
+        }
+
+        if (users.find(u => u.phone === phone)) {
+            message.innerHTML = "❌ این شماره موبایل قبلاً ثبت شده است";
             message.className = "message error";
             return;
         }
@@ -131,6 +172,8 @@
         // اضافه کردن کاربر جدید
         users.push({
             username: username,
+            email: email,
+            phone: phone,
             password: password
         });
         
@@ -141,7 +184,7 @@
         message.innerHTML = "✅ ثبت نام شما با موفقیت انجام شد";
         message.className = "message success";
         
-        // انتقال به صفحه اکانت بعد از 1 ثانیه
+        // انتقال به صفحه اکانت بعد از 2 ثانیه
         setTimeout(function() {
             window.location.href = "Account.html";
         }, 2000);

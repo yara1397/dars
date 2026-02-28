@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>پنل ادمین</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .box { background: white; padding: 40px; border-radius: 12px; width: 300px; text-align: center; }
+        h2 { color: #333; margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; direction: ltr; }
+        button { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        #panel { display: none; background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 900px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: right; font-size: 14px; }
+        th { background: #f0f0f0; font-weight: bold; }
+        tr:hover { background: #f9f9f9; }
+        .del-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 13px; font-family: Tahoma; }
+        .del-btn:hover { background: #dc2626; }
+        #msg { color: red; margin-top: 10px; font-size: 14px; min-height: 20px; }
+        .top-btns { display: flex; gap: 10px; margin-bottom: 15px; }
+        .logout-btn { width: auto; padding: 8px 16px; background: #ef4444; font-size: 14px; border-radius: 6px; border: none; color: white; cursor: pointer; }
+        .count { color: #666; font-size: 13px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="login" class="box">
+    <h2>🛡️ پنل ادمین</h2>
+    <input type="text" id="u" placeholder="admin" />
+    <input type="password" id="p" placeholder="password" />
+    <button onclick="doLogin()">ورود به پنل</button>
+    <div id="msg"></div>
+</div>
+
+<div id="panel">
+    <h2>👥 لیست کاربران ثبت‌نام کرده</h2>
+    <div class="top-btns">
+        <button class="logout-btn" onclick="doLogout()">🚪 خروج</button>
+    </div>
+    <div class="count" id="countTxt"></div>
+    <div id="tableArea"></div>
+</div>
+
+<script>
+function doLogin() {
+    var u = document.getElementById("u").value.trim();
+    var p = document.getElementById("p").value.trim();
+    if (u === "admin" && p === "123456") {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("panel").style.display = "block";
+        loadUsers();
+    } else {
+        document.getElementById("msg").innerHTML = "❌ اشتباه: [" + + "] / [" + + "]";
+    }
+}
+
+function doLogout() {
+    document.getElementById("login").style.display = "flex";
+    document.getElementById("panel").style.display = "none";
+}
+
+function loadUsers() {
+    var users = JSON.parse(localStorage.getItem("users") || "[]");
+    var area = document.getElementById("tableArea");
+    var countTxt = document.getElementById("countTxt");
+
+    countTxt.innerHTML = "تعداد کاربران: <strong>" + users.length + "</strong>";
+
+    if (users.length === 0) {
+        area.innerHTML = "<p style='color:#999;text-align:center;padding:20px'>هنوز کاربری ثبت‌نام نکرده است</p>";
+        return;
+    }
+
+    var html = "<table><tr><th>#</th><th>یوزرنیم</th><th>ایمیل</th><th>موبایل</th><th>حذف</th></tr>";
+    for (var i = 0; i < users.length; i++) {
+        html += "<tr>";
+        html += "<td>" + (i+1) + "</td>";
+        html += "<td><strong>" + (users[i].username || "-") + "</strong></td>";
+        html += "<td>" + (users[i].email || "-") + "</td>";
+        html += "<td style='direction:ltr'>" + (users[i].phone || "-") + "</td>";
+        html += "<td><button class='del-btn' onclick=\"deleteUser('" + users[i].username + "')\">🗑 حذف</button></td>";
+        html += "</tr>";
+    }
+    html += "</table>";
+    area.innerHTML = html;
+}
+
+function deleteUser(username) {
+    if (!confirm("آیا از حذف کاربر «" + username + "» مطمئن هستید؟")) return;
+    var users = JSON.parse(localStorage.getItem("users") || "[]");
+    users = users.filter(function(u) { return u.username !== username; });
+    localStorage.setItem("users", JSON.stringify(users));
+    loadUsers();
+}
+
+document.addEventListener("keydown", function(e) { if (e.key === "Enter") doLogin(); });
+</script>
+</body>
+</html>

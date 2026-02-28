@@ -53,6 +53,7 @@
             margin-bottom: 10px;
             border-radius: 6px;
             border: 1px solid #ccc;
+            box-sizing: border-box;
         }
 
         button {
@@ -75,6 +76,22 @@
             margin-top: 10px;
             font-size: 14px;
             color: #555;
+        }
+
+        /* لینک مخفی ادمین */
+        .admin-link {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.2);
+            text-decoration: none;
+            transition: color 0.3s;
+            user-select: none;
+        }
+
+        .admin-link:hover {
+            color: rgba(255,255,255,0.7);
         }
     </style>
 </head>
@@ -106,8 +123,9 @@
     </div>
 </div>
 
-</body>
-</html>
+<!-- لینک مخفی ادمین - گوشه پایین چپ -->
+<a href="admin.html" class="admin-link">⚙</a>
+
 <script>
 function login() {
     let username = document.getElementById("username").value;
@@ -154,3 +172,6 @@ window.onload = function() {
     }
 }
 </script>
+
+</body>
+</html>
