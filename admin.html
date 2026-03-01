@@ -26,8 +26,8 @@
 
 <div id="login" class="box">
     <h2>🛡️ پنل ادمین</h2>
-    <input type="text" id="u" placeholder="admin" />
-    <input type="password" id="p" placeholder="password" />
+    <input type="email" id="u" placeholder="admin@email.com" />
+    <input type="password" id="p" placeholder="رمز عبور ادمین" />
     <button onclick="doLogin()">ورود به پنل</button>
     <div id="msg"></div>
 </div>
@@ -155,6 +155,40 @@ async function deleteUser(docId, uid, username) {
         alert("خطا در حذف کاربر: " + error.message);
     }
 }
+
+
+window.addEventListener("load", function () {
+    if (!window.firebaseClient) return;
+
+    window.firebaseClient.auth.onAuthStateChanged(async function(user) {
+        if (!user) {
+            adminSession = false;
+            document.getElementById("login").style.display = "block";
+            document.getElementById("panel").style.display = "none";
+            return;
+        }
+
+        try {
+            const profileDoc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
+            const role = profileDoc.exists ? profileDoc.data().role : null;
+
+            if (role !== "admin") {
+                adminSession = false;
+                document.getElementById("login").style.display = "block";
+                document.getElementById("panel").style.display = "none";
+                return;
+            }
+
+            adminSession = true;
+            document.getElementById("msg").innerHTML = "";
+            document.getElementById("login").style.display = "none";
+            document.getElementById("panel").style.display = "block";
+            await loadUsers();
+        } catch (error) {
+            document.getElementById("tableArea").innerHTML = "<p style='color:#ef4444'>خطا در احراز هویت ادمین: " + error.message + "</p>";
+        }
+    });
+});
 
 document.addEventListener("keydown", function(e) { if (e.key === "Enter") doLogin(); });
 </script>
