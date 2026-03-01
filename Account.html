@@ -155,9 +155,17 @@ window.onload = function () {
         try {
             const doc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
             const profile = doc.exists ? doc.data() : null;
-            document.getElementById("username").innerText = profile && profile.username ? profile.username : (user.email || "دانشجو");
+
+            if (!profile || profile.isDeleted === true) {
+                await window.firebaseClient.auth.signOut();
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("username").innerText = profile.username || (user.email || "دانشجو");
         } catch (e) {
-            document.getElementById("username").innerText = user.email || "دانشجو";
+            await window.firebaseClient.auth.signOut();
+            window.location.href = "index.html";
         }
     });
 };

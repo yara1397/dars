@@ -143,7 +143,16 @@ async function login() {
     }
 
     try {
-        await window.firebaseClient.auth.signInWithEmailAndPassword(email, password);
+        const cred = await window.firebaseClient.auth.signInWithEmailAndPassword(email, password);
+        const userDoc = await window.firebaseClient.db.collection("users").doc(cred.user.uid).get();
+        const profile = userDoc.exists ? userDoc.data() : null;
+
+        if (!profile || profile.isDeleted === true) {
+            await window.firebaseClient.auth.signOut();
+            alert("⚠️ حساب کاربری شما حذف/غیرفعال شده است");
+            return;
+        }
+
         window.location.href = "Account.html";
     } catch (error) {
         if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
@@ -157,9 +166,21 @@ async function login() {
 window.onload = function() {
     if (!window.firebaseClient) return;
 
-    window.firebaseClient.auth.onAuthStateChanged(function(user) {
-        if (user) {
+    window.firebaseClient.auth.onAuthStateChanged(async function(user) {
+        if (!user) return;
+
+        try {
+            const userDoc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
+            const profile = userDoc.exists ? userDoc.data() : null;
+
+            if (!profile || profile.isDeleted === true) {
+                await window.firebaseClient.auth.signOut();
+                return;
+            }
+
             window.location.href = "Account.html";
+        } catch (e) {
+            await window.firebaseClient.auth.signOut();
         }
     });
 };

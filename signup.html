@@ -158,6 +158,7 @@
             const usernameExists = await window.firebaseClient.db
                 .collection("users")
                 .where("username", "==", username)
+                .where("isDeleted", "==", false)
                 .limit(1)
                 .get();
 
@@ -170,6 +171,7 @@
             const phoneExists = await window.firebaseClient.db
                 .collection("users")
                 .where("phone", "==", phone)
+                .where("isDeleted", "==", false)
                 .limit(1)
                 .get();
 
