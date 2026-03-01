@@ -26,7 +26,7 @@
 
 <div id="login" class="box">
     <h2>🛡️ پنل ادمین</h2>
-    <input type="email" id="u" placeholder="admin@email.com" />
+    <input type="email" id="u" placeholder="ایمیل ادمین" />
     <input type="password" id="p" placeholder="رمز عبور ادمین" />
     <button onclick="doLogin()">ورود به پنل</button>
     <div id="msg"></div>
@@ -49,24 +49,60 @@
 <script>
 let adminSession = false;
 
-function doLogin() {
-    var u = document.getElementById("u").value.trim();
-    var p = document.getElementById("p").value.trim();
-    if (u === "admin" && p === "123456") {
+async function doLogin() {
+    var email = document.getElementById("u").value.trim();
+    var pass = document.getElementById("p").value.trim();
+    var msg = document.getElementById("msg");
+
+    if (!window.firebaseClient) {
+        msg.innerHTML = "❌ تنظیمات Firebase انجام نشده است";
+        return;
+    }
+
+    if (!email || !pass) {
+        msg.innerHTML = "❌ لطفاً ایمیل و رمز عبور را وارد کنید";
+        return;
+    }
+
+    try {
+        // لاگین واقعی با Firebase Auth
+        const cred = await window.firebaseClient.auth.signInWithEmailAndPassword(email, pass);
+        const uid = cred.user.uid;
+
+        // بررسی نقش ادمین از Firestore
+        const profileDoc = await window.firebaseClient.db.collection("users").doc(uid).get();
+        const role = profileDoc.exists ? profileDoc.data().role : null;
+
+        if (role !== "admin") {
+            await window.firebaseClient.auth.signOut();
+            msg.innerHTML = "❌ شما دسترسی ادمین ندارید";
+            return;
+        }
+
         adminSession = true;
-        document.getElementById("msg").innerHTML = "";
+        msg.innerHTML = "";
         document.getElementById("login").style.display = "none";
         document.getElementById("panel").style.display = "block";
-        loadUsers();
-    } else {
-        document.getElementById("msg").innerHTML = "❌ نام کاربری یا رمز ادمین اشتباه است";
+        await loadUsers();
+    } catch (error) {
+        if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+            msg.innerHTML = "❌ ایمیل یا رمز عبور اشتباه است";
+        } else {
+            msg.innerHTML = "❌ خطا در ورود: " + error.message;
+        }
     }
 }
 
-function doLogout() {
+async function doLogout() {
     adminSession = false;
+    if (window.firebaseClient) {
+        await window.firebaseClient.auth.signOut();
+    }
     document.getElementById("login").style.display = "block";
     document.getElementById("panel").style.display = "none";
+    document.getElementById("u").value = "";
+    document.getElementById("p").value = "";
+    document.getElementById("msg").innerHTML = "";
 }
 
 async function loadUsers() {
@@ -89,6 +125,7 @@ async function loadUsers() {
                     username: data.username || "-",
                     email: data.email || "-",
                     phone: data.phone || "-",
+                    role: data.role || "user",
                     isDeleted: data.isDeleted === true
                 };
             })
@@ -101,14 +138,20 @@ async function loadUsers() {
             return;
         }
 
-        var html = "<table><tr><th>#</th><th>یوزرنیم</th><th>ایمیل</th><th>موبایل</th><th>حذف</th></tr>";
+        var html = "<table><tr><th>#</th><th>یوزرنیم</th><th>ایمیل</th><th>موبایل</th><th>نقش</th><th>حذف</th></tr>";
         for (var i = 0; i < users.length; i++) {
+            var isAdmin = users[i].role === "admin";
             html += "<tr>";
             html += "<td>" + (i+1) + "</td>";
             html += "<td><strong>" + users[i].username + "</strong></td>";
             html += "<td>" + users[i].email + "</td>";
             html += "<td style='direction:ltr'>" + users[i].phone + "</td>";
-            html += "<td><button class='del-btn' onclick=\"deleteUser('" + users[i].docId + "','" + users[i].uid + "','" + users[i].username + "')\">🗑 حذف</button></td>";
+            html += "<td>" + (isAdmin ? "🛡️ ادمین" : "👤 کاربر") + "</td>";
+            if (isAdmin) {
+                html += "<td><span style='color:#999;font-size:12px'>—</span></td>";
+            } else {
+                html += "<td><button class='del-btn' onclick=\"deleteUser('" + users[i].docId + "','" + users[i].uid + "','" + users[i].username + "')\">🗑 حذف</button></td>";
+            }
             html += "</tr>";
         }
         html += "</table>";
@@ -156,7 +199,6 @@ async function deleteUser(docId, uid, username) {
     }
 }
 
-
 window.addEventListener("load", function () {
     if (!window.firebaseClient) return;
 
@@ -179,6 +221,7 @@ window.addEventListener("load", function () {
                 return;
             }
 
+            // ادمین قبلاً لاگین بوده - مستقیم پنل نشان بده
             adminSession = true;
             document.getElementById("msg").innerHTML = "";
             document.getElementById("login").style.display = "none";

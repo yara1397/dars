@@ -16,24 +16,24 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // اجازه ساخت پروفایل توسط کاربر تازه‌ثبت‌نام‌شده (در کنار Cloud Function)
+      // ساخت پروفایل: کاربر فقط برای خودش، با role=user و isDeleted=false
       allow create: if isOwner(userId)
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.role == "user"
         && request.resource.data.isDeleted == false;
 
-      // کاربر فقط پروفایل خودش را می‌خواند
+      // خواندن: کاربر فقط پروفایل خودش
       allow read: if isOwner(userId);
 
-      // کاربر فقط پروفایل خودش را آپدیت می‌کند و فیلدهای حساس را تغییر نمی‌دهد
+      // آپدیت: کاربر فقط پروفایل خودش، بدون تغییر فیلدهای حساس
       allow update: if isOwner(userId)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && request.resource.data.role == resource.data.role
         && request.resource.data.createdAt == resource.data.createdAt;
 
-      // ادمین می‌تواند همه پروفایل‌ها را بخواند/ویرایش/حذف کند
+      // ادمین: دسترسی کامل به همه پروفایل‌ها
       allow read, update, delete: if isAdmin();
     }
   }
