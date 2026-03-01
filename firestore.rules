@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    match /users/{userId} {
+      // اجازه ساخت پروفایل توسط کاربر تازه‌ثبت‌نام‌شده (در کنار Cloud Function)
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == "user"
+        && request.resource.data.isDeleted == false;
+
+      // کاربر فقط پروفایل خودش را می‌خواند
+      allow read: if isOwner(userId);
+
+      // کاربر فقط پروفایل خودش را آپدیت می‌کند و فیلدهای حساس را تغییر نمی‌دهد
+      allow update: if isOwner(userId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // ادمین می‌تواند همه پروفایل‌ها را بخواند/ویرایش/حذف کند
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
