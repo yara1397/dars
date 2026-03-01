@@ -49,47 +49,22 @@
 <script>
 let adminSession = false;
 
-async function doLogin() {
+function doLogin() {
     var u = document.getElementById("u").value.trim();
     var p = document.getElementById("p").value.trim();
-    const msg = document.getElementById("msg");
-
-    if (!window.firebaseClient) {
-        msg.innerHTML = "❌ تنظیمات Firebase انجام نشده است";
-        return;
-    }
-
-    if (!u || !p) {
-        msg.innerHTML = "❌ ایمیل و رمز عبور ادمین را وارد کنید";
-        return;
-    }
-
-    try {
-        const cred = await window.firebaseClient.auth.signInWithEmailAndPassword(u, p);
-        const profileDoc = await window.firebaseClient.db.collection("users").doc(cred.user.uid).get();
-        const role = profileDoc.exists ? profileDoc.data().role : null;
-
-        if (role !== "admin") {
-            await window.firebaseClient.auth.signOut();
-            msg.innerHTML = "❌ این حساب دسترسی ادمین ندارد";
-            return;
-        }
-
+    if (u === "admin" && p === "123456") {
         adminSession = true;
-        msg.innerHTML = "";
+        document.getElementById("msg").innerHTML = "";
         document.getElementById("login").style.display = "none";
         document.getElementById("panel").style.display = "block";
-        await loadUsers();
-    } catch (error) {
-        msg.innerHTML = "❌ ورود ادمین ناموفق بود: " + (error.message || "خطای ناشناخته");
+        loadUsers();
+    } else {
+        document.getElementById("msg").innerHTML = "❌ نام کاربری یا رمز ادمین اشتباه است";
     }
 }
 
 function doLogout() {
     adminSession = false;
-    if (window.firebaseClient) {
-        window.firebaseClient.auth.signOut();
-    }
     document.getElementById("login").style.display = "block";
     document.getElementById("panel").style.display = "none";
 }

@@ -128,16 +128,6 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/firebase-client.js"></script>
 <script>
-async function waitForUserProfile(uid, timeoutMs) {
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < timeoutMs) {
-        const doc = await window.firebaseClient.db.collection("users").doc(uid).get();
-        if (doc.exists) return doc.data();
-        await new Promise(function(resolve) { setTimeout(resolve, 300); });
-    }
-    return null;
-}
-
 async function login() {
     let email = document.getElementById("username").value.trim();
     let password = document.getElementById("password").value;
@@ -154,7 +144,8 @@ async function login() {
 
     try {
         const cred = await window.firebaseClient.auth.signInWithEmailAndPassword(email, password);
-        const profile = await waitForUserProfile(cred.user.uid, 5000);
+        const userDoc = await window.firebaseClient.db.collection("users").doc(cred.user.uid).get();
+        const profile = userDoc.exists ? userDoc.data() : null;
 
         if (!profile || profile.isDeleted === true) {
             await window.firebaseClient.auth.signOut();
@@ -179,7 +170,8 @@ window.onload = function() {
         if (!user) return;
 
         try {
-            const profile = await waitForUserProfile(user.uid, 5000);
+            const userDoc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
+            const profile = userDoc.exists ? userDoc.data() : null;
 
             if (!profile || profile.isDeleted === true) {
                 await window.firebaseClient.auth.signOut();

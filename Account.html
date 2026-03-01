@@ -129,16 +129,6 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/firebase-client.js"></script>
 <script>
-async function waitForUserProfile(uid, timeoutMs) {
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < timeoutMs) {
-        const doc = await window.firebaseClient.db.collection("users").doc(uid).get();
-        if (doc.exists) return doc.data();
-        await new Promise(function(resolve) { setTimeout(resolve, 300); });
-    }
-    return null;
-}
-
 function logout() {
     if (!window.firebaseClient) {
         window.location.href = "index.html";
@@ -163,7 +153,8 @@ window.onload = function () {
         }
 
         try {
-            const profile = await waitForUserProfile(user.uid, 5000);
+            const doc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
+            const profile = doc.exists ? doc.data() : null;
 
             if (!profile || profile.isDeleted === true) {
                 await window.firebaseClient.auth.signOut();

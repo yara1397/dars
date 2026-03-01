@@ -1,101 +1,89 @@
-# راه‌اندازی Firebase (Auth + Firestore + Cloud Functions)
+# راه‌اندازی Firebase برای ثبت‌نام و پنل ادمین
 
-## 1) فعال‌سازی سرویس‌ها
-1. در Firebase Console، **Authentication > Sign-in method** را باز کنید و **Email/Password** را فعال کنید.
-2. **Firestore Database** را بسازید.
-3. **Cloud Functions** را فعال کنید.
+## 1) تکمیل تنظیمات پروژه Firebase
+1. وارد Firebase Console شوید.
+2. از **Project settings > Your apps** اطلاعات Web App را بردارید.
+3. فایل `js/firebase-config.js` را باز کنید و مقادیر واقعی را جایگزین کنید.
 
-## 2) Cloud Function برای ساخت خودکار پروفایل کاربر
-در مسیر `functions/index.js` این کد را قرار دهید (trigger روی Auth onCreate):
+## 2) فعال‌سازی Authentication
+1. از منوی **Authentication > Sign-in method**.
+2. روش **Email/Password** را فعال کنید.
 
-```js
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+## 3) ساخت Firestore Database
+1. از منوی **Firestore Database** دیتابیس را ایجاد کنید.
+2. Region را نزدیک کاربران انتخاب کنید (مثلاً europe-west).
 
-admin.initializeApp();
-
-exports.createUserProfileOnAuthCreate = functions.auth.user().onCreate(async (user) => {
-  const uid = user.uid;
-  const email = user.email || "";
-
-  try {
-    await admin.firestore().collection("users").doc(uid).set(
-      {
-        email,
-        role: "user",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    functions.logger.info("User profile created from Auth trigger", { uid, email });
-  } catch (error) {
-    functions.logger.error("Failed to create user profile from Auth trigger", {
-      uid,
-      email,
-      error: error.message,
-      stack: error.stack,
-    });
-  }
-});
-```
-
-## 3) Firestore Security Rules (نسخه پیشنهادی برای رفع خطای Permission)
-فایل `firestore.rules` را دقیقاً به شکل زیر تنظیم و **Publish** کنید:
+## 4) قوانین امنیتی Firestore (نمونه اولیه)
+> این قوانین برای شروع است. قبل از انتشار، حتماً سخت‌گیرانه‌تر کنید.
 
 ```txt
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
-    }
-
     match /users/{userId} {
-      allow create: if isOwner(userId)
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role == "user"
-        && request.resource.data.isDeleted == false;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
 
-      allow read: if isOwner(userId);
-
-      allow update: if isOwner(userId)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.createdAt == resource.data.createdAt;
-
-      allow read, update, delete: if isAdmin();
+    match /admins/{adminId} {
+      allow read: if request.auth != null && request.auth.uid == adminId;
+      allow write: if false;
     }
   }
 }
 ```
 
-> چرا این Rule خطا را رفع می‌کند؟
-> - کاربر تازه‌ثبت‌نام‌شده اجازه دارد فقط سند خودش را بسازد (`users/{uid}`).
-> - کاربر نمی‌تواند `role` را دستکاری کند (باید `user` بماند).
-> - ادمین با `role == "admin"` امکان لیست/مدیریت همه کاربران را دارد.
+## 5) حذف واقعی کاربر (Auth + Firestore)
+برای حذف واقعی کاربر باید Cloud Function داشته باشید (با Admin SDK):
 
-## 4) نقش ادمین
-برای ادمین شدن یک کاربر، مقدار role سند خودش را از `user` به `admin` تغییر دهید:
+```js
+// functions/index.js
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+admin.initializeApp();
 
-`users/{adminUid}.role = "admin"`
+exports.deleteUserByAdmin = functions.https.onRequest(async (req, res) => {
+  try {
+    if (req.method !== "POST") return res.status(405).json({ ok: false, message: "Method not allowed" });
 
-## 5) Deploy
-- `firebase deploy --only functions`
-- `firebase deploy --only firestore:rules`
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (!token) return res.status(401).json({ ok: false, message: "Missing token" });
 
-## 6) عیب‌یابی خطای Permission
-- اگر ثبت‌نام Auth موفق است ولی پروفایل ساخته نمی‌شود، لاگ Functions را بررسی کنید.
-- اگر پنل ادمین لیست کاربران را نمی‌بیند، مطمئن شوید role کاربر ادمین واقعاً `admin` است.
+    const decoded = await admin.auth().verifyIdToken(token);
+    const adminDoc = await admin.firestore().collection("admins").doc(decoded.uid).get();
+    if (!adminDoc.exists) return res.status(403).json({ ok: false, message: "Not admin" });
+
+    const uid = req.body && req.body.uid;
+    if (!uid) return res.status(400).json({ ok: false, message: "uid is required" });
+
+    await admin.auth().deleteUser(uid);
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ ok: false, message: e.message });
+  }
+});
+```
+
+بعد از deploy:
+1. آدرس Function را در `js/firebase-config.js` داخل `deleteUserFunctionUrl` قرار بدهید.
+2. uid ادمین را داخل `admins/{adminUid}` در Firestore ثبت کنید.
+3. ادمین باید در Firebase Auth هم لاگین باشد تا ID Token ارسال شود.
+
+## 6) نکات نسخه فعلی
+- پنل ادمین الان برای حذف از `doc.id` استفاده می‌کند تا مشکل mismatch با `uid` رخ ندهد.
+- حذف واقعی وقتی موفق است که Function بالا deploy شده باشد.
+- اگر Function تنظیم نشده باشد، پنل ادمین خطای واضح نمایش می‌دهد.
+
+## 7) تست سریع
+1. `signup.html` را باز کنید و یک کاربر ثبت‌نام کنید.
+2. `admin.html` را باز کنید، کاربر را حذف کنید.
+3. دوباره با همان username ثبت‌نام کنید (در صورت حذف واقعی باید مجاز باشد).
+
+
+## 8) خطای Missing or insufficient permissions در ثبت‌نام
+اگر در Rules فقط دسترسی `users/{uid}` را به خود کاربر داده باشید،
+کوئری گرفتن از کل `users` در فرانت‌اند (برای چک تکراری بودن username/phone) مجاز نیست و همین خطا را می‌دهد.
+
+در نسخه فعلی پروژه، ثبت‌نام فقط با Firebase Auth + ساخت سند `users/{uid}` انجام می‌شود و چک یکتایی ایمیل با Auth است.
+برای یکتایی username/phone باید یک Backend/Cloud Function امن پیاده کنید.
