@@ -79,10 +79,20 @@ async function loadUsers() {
     const countTxt = document.getElementById("countTxt");
 
     try {
-        const snap = await window.firebaseClient.db.collection("users").where("isDeleted", "==", false).get();
-        const users = snap.docs.map(function(doc) {
-            return doc.data();
-        });
+        const snap = await window.firebaseClient.db.collection("users").get();
+        const users = snap.docs
+            .map(function(doc) {
+                const data = doc.data() || {};
+                return {
+                    docId: doc.id,
+                    uid: data.uid || doc.id,
+                    username: data.username || "-",
+                    email: data.email || "-",
+                    phone: data.phone || "-",
+                    isDeleted: data.isDeleted === true
+                };
+            })
+            .filter(function(user) { return user.isDeleted !== true; });
 
         countTxt.innerHTML = "تعداد کاربران: <strong>" + users.length + "</strong>";
 
@@ -95,10 +105,10 @@ async function loadUsers() {
         for (var i = 0; i < users.length; i++) {
             html += "<tr>";
             html += "<td>" + (i+1) + "</td>";
-            html += "<td><strong>" + (users[i].username || "-") + "</strong></td>";
-            html += "<td>" + (users[i].email || "-") + "</td>";
-            html += "<td style='direction:ltr'>" + (users[i].phone || "-") + "</td>";
-            html += "<td><button class='del-btn' onclick=\"deleteUser('" + users[i].uid + "','" + users[i].username + "')\">🗑 حذف</button></td>";
+            html += "<td><strong>" + users[i].username + "</strong></td>";
+            html += "<td>" + users[i].email + "</td>";
+            html += "<td style='direction:ltr'>" + users[i].phone + "</td>";
+            html += "<td><button class='del-btn' onclick=\"deleteUser('" + users[i].docId + "','" + users[i].uid + "','" + users[i].username + "')\">🗑 حذف</button></td>";
             html += "</tr>";
         }
         html += "</table>";
@@ -108,15 +118,38 @@ async function loadUsers() {
     }
 }
 
-async function deleteUser(uid, username) {
+async function deleteUser(docId, uid, username) {
     if (!adminSession) return;
     if (!confirm("آیا از حذف کاربر «" + username + "» مطمئن هستید؟")) return;
 
     try {
-        await window.firebaseClient.db.collection("users").doc(uid).update({
-            isDeleted: true,
-            deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+        const deleteUserFunctionUrl = window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.deleteUserFunctionUrl;
+
+        if (!deleteUserFunctionUrl) {
+            throw new Error("deleteUserFunctionUrl در js/firebase-config.js تنظیم نشده است");
+        }
+
+        const adminUser = window.firebaseClient.auth.currentUser;
+        if (!adminUser) {
+            throw new Error("برای حذف واقعی باید ادمین Firebase لاگین باشد");
+        }
+
+        const adminToken = await adminUser.getIdToken();
+        const response = await fetch(deleteUserFunctionUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + adminToken
+            },
+            body: JSON.stringify({ uid: uid })
         });
+
+        const result = await response.json();
+        if (!response.ok || !result || result.ok !== true) {
+            throw new Error((result && result.message) || "حذف واقعی کاربر انجام نشد");
+        }
+
+        await window.firebaseClient.db.collection("users").doc(docId).delete();
         loadUsers();
     } catch (error) {
         alert("خطا در حذف کاربر: " + error.message);

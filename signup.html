@@ -158,11 +158,15 @@
             const usernameExists = await window.firebaseClient.db
                 .collection("users")
                 .where("username", "==", username)
-                .where("isDeleted", "==", false)
-                .limit(1)
+                .limit(10)
                 .get();
 
-            if (!usernameExists.empty) {
+            const hasActiveUsername = usernameExists.docs.some(function(doc) {
+                const data = doc.data() || {};
+                return data.isDeleted !== true;
+            });
+
+            if (hasActiveUsername) {
                 message.innerHTML = "❌ این نام کاربری قبلاً استفاده شده است";
                 message.className = "message error";
                 return;
@@ -171,11 +175,15 @@
             const phoneExists = await window.firebaseClient.db
                 .collection("users")
                 .where("phone", "==", phone)
-                .where("isDeleted", "==", false)
-                .limit(1)
+                .limit(10)
                 .get();
 
-            if (!phoneExists.empty) {
+            const hasActivePhone = phoneExists.docs.some(function(doc) {
+                const data = doc.data() || {};
+                return data.isDeleted !== true;
+            });
+
+            if (hasActivePhone) {
                 message.innerHTML = "❌ این شماره موبایل قبلاً ثبت شده است";
                 message.className = "message error";
                 return;
