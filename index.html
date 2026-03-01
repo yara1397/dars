@@ -140,10 +140,22 @@ function login() {
     let users = JSON.parse(localStorage.getItem("users") || "[]");
     
     // جستجوی کاربر با یوزرنیم و پسورد وارد شده
+    // چک کردن اینکه آیا یوزرنیم وجود دارد ولی پسورد اشتباه است
+    let userExists = users.find(u => u.username === username);
     let user = users.find(u => u.username === username && u.password === password);
-    
+
     if (!user) {
-        alert("❌ نام کاربری یا رمز عبور اشتباه است");
+        if (!userExists) {
+            // چک کردن لیست حذف‌شده‌ها
+            let deleted = JSON.parse(localStorage.getItem("deletedUsers") || "[]");
+            if (deleted.includes(username)) {
+                alert("⚠️ حساب کاربری شما توسط ادمین حذف شده است\nلطفاً دوباره ثبت‌نام کنید");
+            } else {
+                alert("❌ نام کاربری یا رمز عبور اشتباه است");
+            }
+        } else {
+            alert("❌ رمز عبور اشتباه است");
+        }
         return;
     }
 

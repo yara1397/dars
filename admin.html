@@ -50,7 +50,7 @@ function doLogin() {
         document.getElementById("panel").style.display = "block";
         loadUsers();
     } else {
-        document.getElementById("msg").innerHTML = "❌ اشتباه: [" + + "] / [" + + "]";
+        document.getElementById("msg").innerHTML = "❌ اشتباه: [" +  + "] / [" +  + "]";
     }
 }
 
@@ -90,6 +90,12 @@ function deleteUser(username) {
     var users = JSON.parse(localStorage.getItem("users") || "[]");
     users = users.filter(function(u) { return u.username !== username; });
     localStorage.setItem("users", JSON.stringify(users));
+    
+    // ذخیره یوزرنیم در لیست حذف‌شده‌ها
+    var deleted = JSON.parse(localStorage.getItem("deletedUsers") || "[]");
+    if (!deleted.includes(username)) deleted.push(username);
+    localStorage.setItem("deletedUsers", JSON.stringify(deleted));
+    
     loadUsers();
 }
 

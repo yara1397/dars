@@ -169,6 +169,11 @@
             return;
         }
 
+        // حذف از لیست حذف‌شده‌ها در صورت ثبت‌نام مجدد
+        var deleted = JSON.parse(localStorage.getItem("deletedUsers") || "[]");
+        deleted = deleted.filter(function(u) { return u !== username; });
+        localStorage.setItem("deletedUsers", JSON.stringify(deleted));
+
         // اضافه کردن کاربر جدید
         users.push({
             username: username,
