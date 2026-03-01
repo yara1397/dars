@@ -110,7 +110,7 @@
 
     <div class="auth-box">
         <h3>ورود</h3>
-        <input id="username" type="text" placeholder="ایمیل">
+        <input id="email" type="email" placeholder="ایمیل" dir="ltr">
         <input id="password" type="password" placeholder="رمز عبور">
         <button onclick="login()">ورود</button>
 
@@ -129,7 +129,7 @@
 <script src="js/firebase-client.js"></script>
 <script>
 async function login() {
-    let email = document.getElementById("username").value.trim();
+    let email = document.getElementById("email").value.trim();
     let password = document.getElementById("password").value;
 
     if (!window.firebaseClient) {
@@ -157,6 +157,8 @@ async function login() {
     } catch (error) {
         if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
             alert("❌ ایمیل یا رمز عبور اشتباه است");
+        } else if (error.code === "auth/invalid-email") {
+            alert("❌ لطفاً یک ایمیل معتبر وارد کنید");
         } else {
             alert("❌ خطا در ورود: " + error.message);
         }
