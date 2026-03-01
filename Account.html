@@ -153,6 +153,15 @@ function logout() {
 window.onload = function () {
     if (!window.firebaseClient) {
         window.location.href = "index.html";
+
+    window.firebaseClient.auth.signOut().finally(function() {
+        window.location.href = "index.html";
+    });
+}
+
+window.onload = function () {
+    if (!window.firebaseClient) {
+        window.location.href = "index.html";
         return;
     }
 
@@ -164,6 +173,8 @@ window.onload = function () {
 
         try {
             const profile = await waitForUserProfile(user.uid, 5000);
+            const doc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
+            const profile = doc.exists ? doc.data() : null;
 
             if (!profile || profile.isDeleted === true) {
                 await window.firebaseClient.auth.signOut();

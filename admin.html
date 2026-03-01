@@ -82,6 +82,17 @@ async function doLogin() {
         await loadUsers();
     } catch (error) {
         msg.innerHTML = "❌ ورود ادمین ناموفق بود: " + (error.message || "خطای ناشناخته");
+function doLogin() {
+    var u = document.getElementById("u").value.trim();
+    var p = document.getElementById("p").value.trim();
+    if (u === "admin" && p === "123456") {
+        adminSession = true;
+        document.getElementById("msg").innerHTML = "";
+        document.getElementById("login").style.display = "none";
+        document.getElementById("panel").style.display = "block";
+        loadUsers();
+    } else {
+        document.getElementById("msg").innerHTML = "❌ نام کاربری یا رمز ادمین اشتباه است";
     }
 }
 

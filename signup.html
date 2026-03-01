@@ -160,6 +160,56 @@
             await window.firebaseClient.auth.createUserWithEmailAndPassword(email, password);
 
             message.innerHTML = "✅ ثبت نام شما با موفقیت انجام شد. پروفایل شما به‌صورت خودکار ساخته شد";
+            // برای جلوگیری از خطای Permission در Firestore Rules فعلی،
+            // چک یکتایی username/phone روی کل کالکشن users در فرانت حذف شده است.
+            // یکتایی ایمیل توسط Firebase Auth بررسی می‌شود.
+            const usernameExists = await window.firebaseClient.db
+                .collection("users")
+                .where("username", "==", username)
+                .limit(10)
+                .get();
+
+            const hasActiveUsername = usernameExists.docs.some(function(doc) {
+                const data = doc.data() || {};
+                return data.isDeleted !== true;
+            });
+
+            if (hasActiveUsername) {
+                message.innerHTML = "❌ این نام کاربری قبلاً استفاده شده است";
+                message.className = "message error";
+                return;
+            }
+
+            const phoneExists = await window.firebaseClient.db
+                .collection("users")
+                .where("phone", "==", phone)
+                .limit(10)
+                .get();
+
+            const hasActivePhone = phoneExists.docs.some(function(doc) {
+                const data = doc.data() || {};
+                return data.isDeleted !== true;
+            });
+
+            if (hasActivePhone) {
+                message.innerHTML = "❌ این شماره موبایل قبلاً ثبت شده است";
+                message.className = "message error";
+                return;
+            }
+
+            const cred = await window.firebaseClient.auth.createUserWithEmailAndPassword(email, password);
+            const uid = cred.user.uid;
+
+            await window.firebaseClient.db.collection("users").doc(uid).set({
+                uid: uid,
+                username: username,
+                email: email,
+                phone: phone,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                isDeleted: false
+            });
+
+            message.innerHTML = "✅ ثبت نام شما با موفقیت انجام شد";
             message.className = "message success";
 
             setTimeout(function() {

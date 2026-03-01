@@ -47,40 +47,70 @@ exports.createUserProfileOnAuthCreate = functions.auth.user().onCreate(async (us
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
-    }
-
     match /users/{userId} {
-      allow create: if false;
-      allow read: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /admins/{adminId} {
+      allow read: if request.auth != null && request.auth.uid == adminId;
+      allow write: if false;
     }
   }
 }
 ```
 
-> نکته: چون ساخت پروفایل توسط Cloud Function انجام می‌شود، در Rules برای کلاینت `allow create: if false` قرار داده‌ایم.
+## 5) حذف واقعی کاربر (Auth + Firestore)
+برای حذف واقعی کاربر باید Cloud Function داشته باشید (با Admin SDK):
 
-## 4) نقش ادمین
-برای ادمین شدن یک کاربر، مقدار role سند خودش را از `user` به `admin` تغییر دهید:
+```js
+// functions/index.js
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+admin.initializeApp();
 
-`users/{adminUid}.role = "admin"`
+exports.deleteUserByAdmin = functions.https.onRequest(async (req, res) => {
+  try {
+    if (req.method !== "POST") return res.status(405).json({ ok: false, message: "Method not allowed" });
 
-## 5) Deploy
-- `firebase deploy --only functions`
-- `firebase deploy --only firestore:rules`
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (!token) return res.status(401).json({ ok: false, message: "Missing token" });
 
-## 6) عیب‌یابی خطای Permission
-- اگر ثبت‌نام Auth موفق است ولی پروفایل ساخته نمی‌شود، لاگ Functions را بررسی کنید.
-- اگر پنل ادمین لیست کاربران را نمی‌بیند، مطمئن شوید role کاربر ادمین واقعاً `admin` است.
+    const decoded = await admin.auth().verifyIdToken(token);
+    const adminDoc = await admin.firestore().collection("admins").doc(decoded.uid).get();
+    if (!adminDoc.exists) return res.status(403).json({ ok: false, message: "Not admin" });
+
+    const uid = req.body && req.body.uid;
+    if (!uid) return res.status(400).json({ ok: false, message: "uid is required" });
+
+    await admin.auth().deleteUser(uid);
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ ok: false, message: e.message });
+  }
+});
+```
+
+بعد از deploy:
+1. آدرس Function را در `js/firebase-config.js` داخل `deleteUserFunctionUrl` قرار بدهید.
+2. uid ادمین را داخل `admins/{adminUid}` در Firestore ثبت کنید.
+3. ادمین باید در Firebase Auth هم لاگین باشد تا ID Token ارسال شود.
+
+## 6) نکات نسخه فعلی
+- پنل ادمین الان برای حذف از `doc.id` استفاده می‌کند تا مشکل mismatch با `uid` رخ ندهد.
+- حذف واقعی وقتی موفق است که Function بالا deploy شده باشد.
+- اگر Function تنظیم نشده باشد، پنل ادمین خطای واضح نمایش می‌دهد.
+
+## 7) تست سریع
+1. `signup.html` را باز کنید و یک کاربر ثبت‌نام کنید.
+2. `admin.html` را باز کنید، کاربر را حذف کنید.
+3. دوباره با همان username ثبت‌نام کنید (در صورت حذف واقعی باید مجاز باشد).
+
+
+## 8) خطای Missing or insufficient permissions در ثبت‌نام
+اگر در Rules فقط دسترسی `users/{uid}` را به خود کاربر داده باشید،
+کوئری گرفتن از کل `users` در فرانت‌اند (برای چک تکراری بودن username/phone) مجاز نیست و همین خطا را می‌دهد.
+
+در نسخه فعلی پروژه، ثبت‌نام فقط با Firebase Auth + ساخت سند `users/{uid}` انجام می‌شود و چک یکتایی ایمیل با Auth است.
+برای یکتایی username/phone باید یک Backend/Cloud Function امن پیاده کنید.

@@ -155,6 +155,8 @@ async function login() {
     try {
         const cred = await window.firebaseClient.auth.signInWithEmailAndPassword(email, password);
         const profile = await waitForUserProfile(cred.user.uid, 5000);
+        const userDoc = await window.firebaseClient.db.collection("users").doc(cred.user.uid).get();
+        const profile = userDoc.exists ? userDoc.data() : null;
 
         if (!profile || profile.isDeleted === true) {
             await window.firebaseClient.auth.signOut();
@@ -180,6 +182,8 @@ window.onload = function() {
 
         try {
             const profile = await waitForUserProfile(user.uid, 5000);
+            const userDoc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
+            const profile = userDoc.exists ? userDoc.data() : null;
 
             if (!profile || profile.isDeleted === true) {
                 await window.firebaseClient.auth.signOut();
