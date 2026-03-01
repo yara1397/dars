@@ -155,6 +155,9 @@
         }
 
         try {
+            // برای جلوگیری از خطای Permission در Firestore Rules فعلی،
+            // چک یکتایی username/phone روی کل کالکشن users در فرانت حذف شده است.
+            // یکتایی ایمیل توسط Firebase Auth بررسی می‌شود.
             const usernameExists = await window.firebaseClient.db
                 .collection("users")
                 .where("username", "==", username)

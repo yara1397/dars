@@ -79,3 +79,11 @@ exports.deleteUserByAdmin = functions.https.onRequest(async (req, res) => {
 1. `signup.html` را باز کنید و یک کاربر ثبت‌نام کنید.
 2. `admin.html` را باز کنید، کاربر را حذف کنید.
 3. دوباره با همان username ثبت‌نام کنید (در صورت حذف واقعی باید مجاز باشد).
+
+
+## 8) خطای Missing or insufficient permissions در ثبت‌نام
+اگر در Rules فقط دسترسی `users/{uid}` را به خود کاربر داده باشید،
+کوئری گرفتن از کل `users` در فرانت‌اند (برای چک تکراری بودن username/phone) مجاز نیست و همین خطا را می‌دهد.
+
+در نسخه فعلی پروژه، ثبت‌نام فقط با Firebase Auth + ساخت سند `users/{uid}` انجام می‌شود و چک یکتایی ایمیل با Auth است.
+برای یکتایی username/phone باید یک Backend/Cloud Function امن پیاده کنید.
