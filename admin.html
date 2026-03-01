@@ -26,8 +26,8 @@
 
 <div id="login" class="box">
     <h2>🛡️ پنل ادمین</h2>
-    <input type="text" id="u" placeholder="admin" />
-    <input type="password" id="p" placeholder="password" />
+    <input type="email" id="u" placeholder="admin@email.com" />
+    <input type="password" id="p" placeholder="رمز عبور ادمین" />
     <button onclick="doLogin()">ورود به پنل</button>
     <div id="msg"></div>
 </div>
@@ -41,63 +41,179 @@
     <div id="tableArea"></div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-client.js"></script>
 <script>
-function doLogin() {
+let adminSession = false;
+
+async function doLogin() {
     var u = document.getElementById("u").value.trim();
     var p = document.getElementById("p").value.trim();
-    if (u === "admin" && p === "123456") {
+    const msg = document.getElementById("msg");
+
+    if (!window.firebaseClient) {
+        msg.innerHTML = "❌ تنظیمات Firebase انجام نشده است";
+        return;
+    }
+
+    if (!u || !p) {
+        msg.innerHTML = "❌ ایمیل و رمز عبور ادمین را وارد کنید";
+        return;
+    }
+
+    try {
+        const cred = await window.firebaseClient.auth.signInWithEmailAndPassword(u, p);
+        const profileDoc = await window.firebaseClient.db.collection("users").doc(cred.user.uid).get();
+        const role = profileDoc.exists ? profileDoc.data().role : null;
+
+        if (role !== "admin") {
+            await window.firebaseClient.auth.signOut();
+            msg.innerHTML = "❌ این حساب دسترسی ادمین ندارد";
+            return;
+        }
+
+        adminSession = true;
+        msg.innerHTML = "";
         document.getElementById("login").style.display = "none";
         document.getElementById("panel").style.display = "block";
-        loadUsers();
-    } else {
-        document.getElementById("msg").innerHTML = "❌ اشتباه: [" +  + "] / [" +  + "]";
+        await loadUsers();
+    } catch (error) {
+        msg.innerHTML = "❌ ورود ادمین ناموفق بود: " + (error.message || "خطای ناشناخته");
     }
 }
 
 function doLogout() {
-    document.getElementById("login").style.display = "flex";
+    adminSession = false;
+    if (window.firebaseClient) {
+        window.firebaseClient.auth.signOut();
+    }
+    document.getElementById("login").style.display = "block";
     document.getElementById("panel").style.display = "none";
 }
 
-function loadUsers() {
-    var users = JSON.parse(localStorage.getItem("users") || "[]");
-    var area = document.getElementById("tableArea");
-    var countTxt = document.getElementById("countTxt");
-
-    countTxt.innerHTML = "تعداد کاربران: <strong>" + users.length + "</strong>";
-
-    if (users.length === 0) {
-        area.innerHTML = "<p style='color:#999;text-align:center;padding:20px'>هنوز کاربری ثبت‌نام نکرده است</p>";
+async function loadUsers() {
+    if (!window.firebaseClient) {
+        document.getElementById("tableArea").innerHTML = "<p style='color:#ef4444'>تنظیمات Firebase انجام نشده است</p>";
         return;
     }
 
-    var html = "<table><tr><th>#</th><th>یوزرنیم</th><th>ایمیل</th><th>موبایل</th><th>حذف</th></tr>";
-    for (var i = 0; i < users.length; i++) {
-        html += "<tr>";
-        html += "<td>" + (i+1) + "</td>";
-        html += "<td><strong>" + (users[i].username || "-") + "</strong></td>";
-        html += "<td>" + (users[i].email || "-") + "</td>";
-        html += "<td style='direction:ltr'>" + (users[i].phone || "-") + "</td>";
-        html += "<td><button class='del-btn' onclick=\"deleteUser('" + users[i].username + "')\">🗑 حذف</button></td>";
-        html += "</tr>";
+    const area = document.getElementById("tableArea");
+    const countTxt = document.getElementById("countTxt");
+
+    try {
+        const snap = await window.firebaseClient.db.collection("users").get();
+        const users = snap.docs
+            .map(function(doc) {
+                const data = doc.data() || {};
+                return {
+                    docId: doc.id,
+                    uid: data.uid || doc.id,
+                    username: data.username || "-",
+                    email: data.email || "-",
+                    phone: data.phone || "-",
+                    isDeleted: data.isDeleted === true
+                };
+            })
+            .filter(function(user) { return user.isDeleted !== true; });
+
+        countTxt.innerHTML = "تعداد کاربران: <strong>" + users.length + "</strong>";
+
+        if (users.length === 0) {
+            area.innerHTML = "<p style='color:#999;text-align:center;padding:20px'>هنوز کاربری ثبت‌نام نکرده است</p>";
+            return;
+        }
+
+        var html = "<table><tr><th>#</th><th>یوزرنیم</th><th>ایمیل</th><th>موبایل</th><th>حذف</th></tr>";
+        for (var i = 0; i < users.length; i++) {
+            html += "<tr>";
+            html += "<td>" + (i+1) + "</td>";
+            html += "<td><strong>" + users[i].username + "</strong></td>";
+            html += "<td>" + users[i].email + "</td>";
+            html += "<td style='direction:ltr'>" + users[i].phone + "</td>";
+            html += "<td><button class='del-btn' onclick=\"deleteUser('" + users[i].docId + "','" + users[i].uid + "','" + users[i].username + "')\">🗑 حذف</button></td>";
+            html += "</tr>";
+        }
+        html += "</table>";
+        area.innerHTML = html;
+    } catch (error) {
+        area.innerHTML = "<p style='color:#ef4444'>خطا در دریافت کاربران: " + error.message + "</p>";
     }
-    html += "</table>";
-    area.innerHTML = html;
 }
 
-function deleteUser(username) {
+async function deleteUser(docId, uid, username) {
+    if (!adminSession) return;
     if (!confirm("آیا از حذف کاربر «" + username + "» مطمئن هستید؟")) return;
-    var users = JSON.parse(localStorage.getItem("users") || "[]");
-    users = users.filter(function(u) { return u.username !== username; });
-    localStorage.setItem("users", JSON.stringify(users));
-    
-    // ذخیره یوزرنیم در لیست حذف‌شده‌ها
-    var deleted = JSON.parse(localStorage.getItem("deletedUsers") || "[]");
-    if (!deleted.includes(username)) deleted.push(username);
-    localStorage.setItem("deletedUsers", JSON.stringify(deleted));
-    
-    loadUsers();
+
+    try {
+        const deleteUserFunctionUrl = window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.deleteUserFunctionUrl;
+
+        if (!deleteUserFunctionUrl) {
+            throw new Error("deleteUserFunctionUrl در js/firebase-config.js تنظیم نشده است");
+        }
+
+        const adminUser = window.firebaseClient.auth.currentUser;
+        if (!adminUser) {
+            throw new Error("برای حذف واقعی باید ادمین Firebase لاگین باشد");
+        }
+
+        const adminToken = await adminUser.getIdToken();
+        const response = await fetch(deleteUserFunctionUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + adminToken
+            },
+            body: JSON.stringify({ uid: uid })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result || result.ok !== true) {
+            throw new Error((result && result.message) || "حذف واقعی کاربر انجام نشد");
+        }
+
+        await window.firebaseClient.db.collection("users").doc(docId).delete();
+        loadUsers();
+    } catch (error) {
+        alert("خطا در حذف کاربر: " + error.message);
+    }
 }
+
+
+window.addEventListener("load", function () {
+    if (!window.firebaseClient) return;
+
+    window.firebaseClient.auth.onAuthStateChanged(async function(user) {
+        if (!user) {
+            adminSession = false;
+            document.getElementById("login").style.display = "block";
+            document.getElementById("panel").style.display = "none";
+            return;
+        }
+
+        try {
+            const profileDoc = await window.firebaseClient.db.collection("users").doc(user.uid).get();
+            const role = profileDoc.exists ? profileDoc.data().role : null;
+
+            if (role !== "admin") {
+                adminSession = false;
+                document.getElementById("login").style.display = "block";
+                document.getElementById("panel").style.display = "none";
+                return;
+            }
+
+            adminSession = true;
+            document.getElementById("msg").innerHTML = "";
+            document.getElementById("login").style.display = "none";
+            document.getElementById("panel").style.display = "block";
+            await loadUsers();
+        } catch (error) {
+            document.getElementById("tableArea").innerHTML = "<p style='color:#ef4444'>خطا در احراز هویت ادمین: " + error.message + "</p>";
+        }
+    });
+});
 
 document.addEventListener("keydown", function(e) { if (e.key === "Enter") doLogin(); });
 </script>

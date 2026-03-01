@@ -13,8 +13,6 @@
             background-color: #f4f6fb;
             color: #333;
         }
-
-        /* هدر */
         .header {
             background: linear-gradient(135deg, #4f46e5, #3b82f6);
             color: white;
@@ -23,11 +21,7 @@
             justify-content: space-between;
             align-items: center;
         }
-
-        .header h2 {
-            margin: 0;
-        }
-
+        .header h2 { margin: 0; }
         .logout {
             background-color: #ef4444;
             border: none;
@@ -36,59 +30,25 @@
             color: white;
             cursor: pointer;
         }
-
-        /* خوش آمدگویی */
-        .welcome {
-            padding: 30px;
-        }
-
-        .welcome span {
-            color: #3b82f6;
-            font-weight: bold;
-        }
-
-        /* دوره‌ها */
-        .courses {
-            padding: 0 30px 30px;
-        }
-
-        .courses h3 {
-            margin-bottom: 15px;
-        }
-
+        .welcome { padding: 30px; }
+        .welcome span { color: #3b82f6; font-weight: bold; }
+        .courses { padding: 0 30px 30px; }
+        .courses h3 { margin-bottom: 15px; }
         .course-list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
-
         .course {
             background-color: white;
             border-radius: 12px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
             overflow: hidden;
         }
-
-        .course img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            background-color: #ddd;
-        }
-
-        .course-content {
-            padding: 15px;
-        }
-
-        .course-content h4 {
-            margin: 0 0 10px;
-        }
-
-        .course-content p {
-            font-size: 14px;
-            color: #666;
-        }
-
+        .course img { width: 100%; height: 150px; object-fit: cover; background-color: #ddd; }
+        .course-content { padding: 15px; }
+        .course-content h4 { margin: 0 0 10px; }
+        .course-content p { font-size: 14px; color: #666; }
         .course-content button {
             margin-top: 10px;
             width: 100%;
@@ -99,52 +59,36 @@
             color: white;
             cursor: pointer;
         }
-
-        /* ویدیو نمونه */
-        .videos {
-            padding: 0 30px 40px;
-        }
-
+        .videos { padding: 0 30px 40px; }
         .video-box {
             background-color: white;
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
         }
-
-        video {
-            width: 100%;
-            border-radius: 10px;
-            margin-top: 10px;
-        }
+        video { width: 100%; border-radius: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
-
-<!-- هدر -->
 <div class="header">
     <h2>پنل آموزشی</h2>
     <button class="logout" onclick="logout()">خروج</button>
 </div>
 
-<!-- خوش آمدگویی -->
 <div class="welcome">
-    خوش آمدید <span id="username">دانشجو</span> 👋  
+    خوش آمدید <span id="username">دانشجو</span> 👋
     <p>دوره‌های آموزشی خود را ادامه دهید</p>
 </div>
 
-<!-- دوره‌ها -->
 <div class="courses">
     <h3>📘 دوره‌های شما</h3>
     <div class="course-list">
-
         <div class="course">
             <img src="https://image.torob.com/base/images/IL/70/IL70vwPKSuVvKrU-.jpg_/0x176.jpg" alt="دوره آموزش شطرنج">
             <div class="course-content">
                 <h4>آموزش شطرنج</h4>
                 <p>یادگیری قوانین، تاکتیک‌ها و استراتژی‌های شطرنج از پایه</p>
                <button onclick="location.href='chess.html'">مشاهده دوره</button>
-
             </div>
         </div>
 
@@ -165,11 +109,9 @@
                 <button onclick="alert('دوره در حال آماده‌سازی است')">مشاهده درس</button>
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- ویدیو نمونه -->
 <div class="videos">
     <h3>🎥 ویدیو نمونه</h3>
     <div class="video-box">
@@ -181,15 +123,61 @@
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-client.js"></script>
 <script>
-    // نمایش نام کاربر
-    document.getElementById("username").innerText =
-        localStorage.getItem("username") || "دانشجو";
-
-    function logout() {
-        localStorage.removeItem("username");
-        window.location.href = "index.html";
+async function waitForUserProfile(uid, timeoutMs) {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+        const doc = await window.firebaseClient.db.collection("users").doc(uid).get();
+        if (doc.exists) return doc.data();
+        await new Promise(function(resolve) { setTimeout(resolve, 300); });
     }
+    return null;
+}
+
+function logout() {
+    if (!window.firebaseClient) {
+        window.location.href = "index.html";
+        return;
+    }
+
+    window.firebaseClient.auth.signOut().finally(function() {
+        window.location.href = "index.html";
+    });
+}
+
+window.onload = function () {
+    if (!window.firebaseClient) {
+        window.location.href = "index.html";
+        return;
+    }
+
+    window.firebaseClient.auth.onAuthStateChanged(async function(user) {
+        if (!user) {
+            window.location.href = "index.html";
+            return;
+        }
+
+        try {
+            const profile = await waitForUserProfile(user.uid, 5000);
+
+            if (!profile || profile.isDeleted === true) {
+                await window.firebaseClient.auth.signOut();
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("username").innerText = profile.username || (user.email || "دانشجو");
+        } catch (e) {
+            await window.firebaseClient.auth.signOut();
+            window.location.href = "index.html";
+        }
+    });
+};
 </script>
 
 </body>

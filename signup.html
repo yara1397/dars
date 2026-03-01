@@ -108,8 +108,13 @@
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-client.js"></script>
 <script>
-    function signup() {
+    async function signup() {
         let username = document.getElementById("username").value.trim();
         let email = document.getElementById("email").value.trim();
         let phone = document.getElementById("phone").value.trim();
@@ -117,14 +122,18 @@
         let repassword = document.getElementById("repassword").value;
         let message = document.getElementById("message");
 
-        // بررسی پر بودن همه فیلدها
+        if (!window.firebaseClient) {
+            message.innerHTML = "❌ تنظیمات Firebase انجام نشده است";
+            message.className = "message error";
+            return;
+        }
+
         if (!username || !email || !phone || !password || !repassword) {
             message.innerHTML = "❌ لطفاً همه فیلدها را پر کنید";
             message.className = "message error";
             return;
         }
 
-        // اعتبارسنجی ایمیل
         let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             message.innerHTML = "❌ فرمت ایمیل وارد شده صحیح نیست";
@@ -132,7 +141,6 @@
             return;
         }
 
-        // اعتبارسنجی شماره موبایل ایران (09xxxxxxxxx)
         let phoneRegex = /^09[0-9]{9}$/;
         if (!phoneRegex.test(phone)) {
             message.innerHTML = "❌ شماره موبایل باید با 09 شروع شود و ۱۱ رقم باشد";
@@ -140,59 +148,33 @@
             return;
         }
 
-        // بررسی تطابق رمز عبور
         if (password !== repassword) {
             message.innerHTML = "❌ رمز عبور و تکرار آن یکسان نیست";
             message.className = "message error";
             return;
         }
 
-        // دریافت لیست کاربران از localStorage
-        let users = JSON.parse(localStorage.getItem("users") || "[]");
-        
-        // چک کردن تکراری نبودن نام کاربری، ایمیل و موبایل
-        if (users.find(u => u.username === username)) {
-            message.innerHTML = "❌ این نام کاربری قبلاً استفاده شده است";
+        try {
+            // فقط کاربر Auth ساخته می‌شود. سند users/{uid} توسط Cloud Function ساخته می‌شود.
+
+            await window.firebaseClient.auth.createUserWithEmailAndPassword(email, password);
+
+            message.innerHTML = "✅ ثبت نام شما با موفقیت انجام شد. پروفایل شما به‌صورت خودکار ساخته شد";
+            message.className = "message success";
+
+            setTimeout(function() {
+                window.location.href = "Account.html";
+            }, 1500);
+        } catch (error) {
+            if (error.code === "auth/email-already-in-use") {
+                message.innerHTML = "❌ این ایمیل قبلاً ثبت شده است";
+            } else if (error.code === "auth/weak-password") {
+                message.innerHTML = "❌ رمز عبور باید حداقل ۶ کاراکتر باشد";
+            } else {
+                message.innerHTML = "❌ خطا در ثبت‌نام: " + error.message;
+            }
             message.className = "message error";
-            return;
         }
-
-        if (users.find(u => u.email === email)) {
-            message.innerHTML = "❌ این ایمیل قبلاً ثبت شده است";
-            message.className = "message error";
-            return;
-        }
-
-        if (users.find(u => u.phone === phone)) {
-            message.innerHTML = "❌ این شماره موبایل قبلاً ثبت شده است";
-            message.className = "message error";
-            return;
-        }
-
-        // حذف از لیست حذف‌شده‌ها در صورت ثبت‌نام مجدد
-        var deleted = JSON.parse(localStorage.getItem("deletedUsers") || "[]");
-        deleted = deleted.filter(function(u) { return u !== username; });
-        localStorage.setItem("deletedUsers", JSON.stringify(deleted));
-
-        // اضافه کردن کاربر جدید
-        users.push({
-            username: username,
-            email: email,
-            phone: phone,
-            password: password
-        });
-        
-        // ذخیره لیست کاربران
-        localStorage.setItem("users", JSON.stringify(users));
-        localStorage.setItem("username", username);
-        
-        message.innerHTML = "✅ ثبت نام شما با موفقیت انجام شد";
-        message.className = "message success";
-        
-        // انتقال به صفحه اکانت بعد از 2 ثانیه
-        setTimeout(function() {
-            window.location.href = "Account.html";
-        }, 2000);
     }
 </script>
 
