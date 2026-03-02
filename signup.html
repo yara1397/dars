@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ثبت‌نام | EmailJS واقعی</title>
+    <title>ثبت‌نام</title>
     <!-- EmailJS -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/firebase-client.js"></script>
     <style>
         body { 
             font-family: Tahoma; 
@@ -38,7 +44,7 @@
             width: 100%;
         }
         .password-wrap input{
-            padding-left: 48px; /* جا برای دکمه چشم */
+            padding-left: 48px;
         }
         .toggle-pass{
             position: absolute;
@@ -105,6 +111,18 @@
             transition: all 0.3s;
         }
         .step.active { background: #4ecdc4; transform: scale(1.2); }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -127,9 +145,8 @@
             <input type="text" id="name" placeholder="نام کامل" required>
             <input type="email" id="email" placeholder="ایمیل" required>
             <div class="password-wrap">
-                <input type="password" id="password" placeholder="رمز عبور" required>
+                <input type="password" id="password" placeholder="رمز عبور (حداقل ۶ کاراکتر)" required>
                 <button type="button" id="togglePasswordBtn" class="toggle-pass" aria-label="نمایش/مخفی کردن رمز عبور">
-                    <!-- eye icon -->
                     <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                         <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
@@ -156,25 +173,22 @@
         </form>
     </div>
 
-    <!-- 👇 SCRIPT مهم - دقیقاً اینجا 👇 -->
     <script>
-        // 🔥 ۳ خط جادویی - فقط اینجا عوض کن!
+        // ======== EmailJS Config ========
         const EMAILJS_CONFIG = {
-            publicKey: 'zYCifVUI7N8zCbdLV',     // از Account
-            serviceId: 'service_abc123def456xyz',      // از Email Services  
-            templateId: 'template_jydj2zf'     // از Email Templates
+            publicKey: 'zYCifVUI7N8zCbdLV',
+            serviceId: 'service_abc123def456xyz',
+            templateId: 'template_jydj2zf'
         };
-
-        // راه‌اندازی
         emailjs.init(EMAILJS_CONFIG.publicKey);
-        
+
         let emailVerified = false;
-        let generatedCode = null; // کد تصادفی هر بار ساخته می‌شود
+        let generatedCode = null;
         let passwordVisible = false;
 
         // بروزرسانی مراحل
         function updateSteps(step) {
-            for(let i=1; i<=3; i++) {
+            for (let i = 1; i <= 3; i++) {
                 document.getElementById(`step${i}`).classList.toggle('active', i == step);
             }
         }
@@ -183,93 +197,159 @@
         function showMessage(text, type) {
             const success = document.getElementById('successMsg');
             const error = document.getElementById('errorMsg');
-            [success, error].forEach((el, i) => {
-                el.textContent = text;
-                el.classList.toggle('show', i === (type === 'success' ? 0 : 1));
-            });
+            success.textContent = text;
+            error.textContent = text;
+            success.classList.toggle('show', type === 'success');
+            error.classList.toggle('show', type === 'error');
         }
 
-        // نمایش/مخفی کردن رمز عبور
+        // نمایش/مخفی رمز عبور
         document.getElementById('togglePasswordBtn').onclick = () => {
             passwordVisible = !passwordVisible;
-            const passInput = document.getElementById('password');
-            passInput.type = passwordVisible ? 'text' : 'password';
+            document.getElementById('password').type = passwordVisible ? 'text' : 'password';
             document.getElementById('eyeOpen').style.display = passwordVisible ? 'none' : 'block';
             document.getElementById('eyeClosed').style.display = passwordVisible ? 'block' : 'none';
         };
 
-        // ارسال کد
+        // ارسال کد تأیید
         document.getElementById('sendCodeBtn').onclick = async () => {
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if(!name || !email || !password || !confirmPassword) {
-                showMessage('نام، ایمیل و رمز عبور را کامل وارد کنید', 'error');
+
+            if (!name || !email || !password || !confirmPassword) {
+                showMessage('همه فیلدها را پر کنید', 'error');
                 return;
             }
-
-            if(password !== confirmPassword) {
+            if (password.length < 6) {
+                showMessage('رمز عبور باید حداقل ۶ کاراکتر باشد', 'error');
+                return;
+            }
+            if (password !== confirmPassword) {
                 showMessage('رمز عبور و تکرار آن یکسان نیست', 'error');
                 return;
             }
 
+            const btn = document.getElementById('sendCodeBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'در حال ارسال... <span class="spinner"></span>';
+
             try {
-                // ساخت کد ۶ رقمی تصادفی در فرانت
                 generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-                // ارسال واقعی ایمیل!
                 await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
                     to_email: email,
                     to_name: name,
                     verification_code: generatedCode
                 });
-                
+
                 document.getElementById('verifySection').style.display = 'block';
                 updateSteps(2);
-                // فقط پیام کلی بدون نمایش خود کد
-                showMessage('کد به ایمیل ارسال شد', 'success');
+                showMessage('✉️ کد به ایمیل ارسال شد', 'success');
                 document.getElementById('verifyCode').focus();
-                
-            } catch(error) {
-                showMessage('خطا: ' + (error?.text || error?.message || 'مشکل ناشناخته'), 'error');
+
+            } catch (err) {
+                showMessage('خطا در ارسال ایمیل: ' + (err?.text || err?.message || 'مشکل ناشناخته'), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '📧 ارسال کد تأیید';
             }
         };
 
         // تأیید کد
         document.getElementById('verifyBtn').onclick = () => {
             const code = document.getElementById('verifyCode').value;
-            if(code === generatedCode) {
+            if (code === generatedCode) {
                 emailVerified = true;
                 updateSteps(3);
                 document.getElementById('registerBtn').disabled = false;
-                showMessage('✅ تأیید شد!', 'success');
+                showMessage('✅ ایمیل تأیید شد! حالا ثبت‌نام کنید', 'success');
             } else {
                 showMessage('❌ کد اشتباه است', 'error');
             }
         };
 
-        // ثبت‌نام
-        document.getElementById('registerForm').onsubmit = (e) => {
+        // =====================================
+        // ✅ ثبت‌نام با Firebase Auth + Firestore
+        // =====================================
+        document.getElementById('registerForm').onsubmit = async (e) => {
             e.preventDefault();
+
+            if (!emailVerified) {
+                showMessage('ابتدا کد را تأیید کنید', 'error');
+                return;
+            }
+
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            if(password !== confirmPassword) {
+
+            if (password !== confirmPassword) {
                 showMessage('رمز عبور و تکرار آن یکسان نیست', 'error');
                 return;
             }
-            if(emailVerified) {
-                showMessage('🎉 ثبت‌نام موفق!', 'success');
-                setTimeout(() => location.reload(), 2000);
-            } else {
-                showMessage('ابتدا کد را تأیید کنید', 'error');
+
+            // بررسی اینکه Firebase لود شده
+            if (!window.firebaseClient) {
+                showMessage('خطا: Firebase بارگذاری نشده. صفحه را رفرش کنید', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'در حال ثبت‌نام... <span class="spinner"></span>';
+
+            try {
+                const { auth, db } = window.firebaseClient;
+
+                // ۱. ساخت اکانت در Firebase Authentication
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // ۲. بروزرسانی نام در Firebase Auth
+                await user.updateProfile({ displayName: name });
+
+                // ۳. ذخیره اطلاعات در Firestore (کالکشن users)
+                await db.collection('users').doc(user.uid).set({
+                    uid: user.uid,
+                    name: name,
+                    email: email,
+                    role: 'student',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showMessage('🎉 ثبت‌نام موفق! در حال انتقال به پنل...', 'success');
+
+                // ۴. انتقال به صفحه اکانت
+                setTimeout(() => {
+                    window.location.href = 'Account.html';
+                }, 1500);
+
+            } catch (err) {
+                // پیام‌های خطای فارسی
+                let msg = 'خطا در ثبت‌نام';
+                if (err.code === 'auth/email-already-in-use') {
+                    msg = 'این ایمیل قبلاً ثبت شده است';
+                } else if (err.code === 'auth/weak-password') {
+                    msg = 'رمز عبور خیلی ضعیف است (حداقل ۶ کاراکتر)';
+                } else if (err.code === 'auth/invalid-email') {
+                    msg = 'فرمت ایمیل اشتباه است';
+                } else if (err.code === 'auth/network-request-failed') {
+                    msg = 'خطای اتصال به اینترنت';
+                } else {
+                    msg = err.message || 'خطای ناشناخته';
+                }
+                showMessage('❌ ' + msg, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '🎉 ثبت‌نام';
             }
         };
 
-        // فقط عدد
+        // فقط عدد برای کد
         document.getElementById('verifyCode').oninput = (e) => {
-            e.target.value = e.target.value.replace(/\\D/g, '').slice(0,6);
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
         };
     </script>
 </body>
