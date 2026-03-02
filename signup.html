@@ -33,6 +33,36 @@
             font-size: 16px;
             box-sizing: border-box;
         }
+        .password-wrap{
+            position: relative;
+            width: 100%;
+        }
+        .password-wrap input{
+            padding-left: 48px; /* جا برای دکمه چشم */
+        }
+        .toggle-pass{
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        .toggle-pass:hover{
+            background: rgba(78, 205, 196, 0.15);
+        }
+        .toggle-pass svg{
+            width: 22px;
+            height: 22px;
+        }
         button { 
             width: 100%; 
             padding: 15px; 
@@ -96,7 +126,23 @@
         <form id="registerForm">
             <input type="text" id="name" placeholder="نام کامل" required>
             <input type="email" id="email" placeholder="ایمیل" required>
-            <input type="password" id="password" placeholder="رمز عبور" required>
+            <div class="password-wrap">
+                <input type="password" id="password" placeholder="رمز عبور" required>
+                <button type="button" id="togglePasswordBtn" class="toggle-pass" aria-label="نمایش/مخفی کردن رمز عبور">
+                    <!-- eye icon -->
+                    <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <svg id="eyeClosed" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:none">
+                        <path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M10.58 10.58A3 3 0 0 0 12 15a3 3 0 0 0 2.42-4.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M9.88 5.09A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a18.3 18.3 0 0 1-4.06 5.19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6.11 6.11C3.73 7.84 2 12 2 12s3.5 7 10 7c1.44 0 2.76-.24 3.95-.67" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <input type="password" id="confirmPassword" placeholder="تکرار رمز عبور" required>
             
             <button type="button" id="sendCodeBtn">📧 ارسال کد تأیید</button>
             
@@ -124,6 +170,7 @@
         
         let emailVerified = false;
         let generatedCode = null; // کد تصادفی هر بار ساخته می‌شود
+        let passwordVisible = false;
 
         // بروزرسانی مراحل
         function updateSteps(step) {
@@ -142,13 +189,29 @@
             });
         }
 
+        // نمایش/مخفی کردن رمز عبور
+        document.getElementById('togglePasswordBtn').onclick = () => {
+            passwordVisible = !passwordVisible;
+            const passInput = document.getElementById('password');
+            passInput.type = passwordVisible ? 'text' : 'password';
+            document.getElementById('eyeOpen').style.display = passwordVisible ? 'none' : 'block';
+            document.getElementById('eyeClosed').style.display = passwordVisible ? 'block' : 'none';
+        };
+
         // ارسال کد
         document.getElementById('sendCodeBtn').onclick = async () => {
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
             
-            if(!name || !email) {
-                showMessage('نام و ایمیل را پر کنید', 'error');
+            if(!name || !email || !password || !confirmPassword) {
+                showMessage('نام، ایمیل و رمز عبور را کامل وارد کنید', 'error');
+                return;
+            }
+
+            if(password !== confirmPassword) {
+                showMessage('رمز عبور و تکرار آن یکسان نیست', 'error');
                 return;
             }
 
@@ -170,7 +233,7 @@
                 document.getElementById('verifyCode').focus();
                 
             } catch(error) {
-                showMessage('خطا: ' + error.text, 'error');
+                showMessage('خطا: ' + (error?.text || error?.message || 'مشکل ناشناخته'), 'error');
             }
         };
 
@@ -190,6 +253,12 @@
         // ثبت‌نام
         document.getElementById('registerForm').onsubmit = (e) => {
             e.preventDefault();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            if(password !== confirmPassword) {
+                showMessage('رمز عبور و تکرار آن یکسان نیست', 'error');
+                return;
+            }
             if(emailVerified) {
                 showMessage('🎉 ثبت‌نام موفق!', 'success');
                 setTimeout(() => location.reload(), 2000);
@@ -200,7 +269,7 @@
 
         // فقط عدد
         document.getElementById('verifyCode').oninput = (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0,6);
+            e.target.value = e.target.value.replace(/\\D/g, '').slice(0,6);
         };
     </script>
 </body>
