@@ -2,194 +2,206 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ثبت نام</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-  <link rel="stylesheet" href="css/style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700;900&display=swap" rel="stylesheet"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت‌نام | EmailJS واقعی</title>
+    <!-- EmailJS -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
-        body {
+        body { 
+            font-family: Tahoma; 
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
             margin: 0;
-            font-family: Tahoma, sans-serif;
-            background: linear-gradient(135deg, #11998e, #38ef7d);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
-
-        .box {
-            background-color: white;
-            width: 400px;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        .form { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%; 
+            max-width: 400px;
         }
-
-        h2 {
-            text-align: center;
-            color: #11998e;
-            margin-bottom: 20px;
-        }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 14px;
+        input { 
+            width: 100%; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border: 2px solid #ddd; 
+            border-radius: 10px; 
+            font-size: 16px;
             box-sizing: border-box;
         }
-
-        input:focus {
-            outline: none;
-            border-color: #11998e;
-            box-shadow: 0 0 0 2px rgba(17, 153, 142, 0.15);
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background: #4ecdc4; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            margin: 10px 0;
         }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            background-color: #11998e;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
         }
-
-        button:hover {
-            background-color: #0f7f76;
+        .success { 
+            background: #d4edda; 
+            color: #155724; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin: 10px 0; 
+            display: none;
         }
-
-        .message {
-            margin-top: 15px;
-            text-align: center;
-            font-size: 14px;
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin: 10px 0; 
+            display: none;
         }
-
-        .success {
-            color: green;
+        .show { display: block !important; }
+        .step { 
+            display: inline-block; 
+            width: 30px; 
+            height: 30px; 
+            border-radius: 50%; 
+            background: #ddd; 
+            margin: 0 10px; 
+            transition: all 0.3s;
         }
-
-        .error {
-            color: red;
-        }
-
-        .back {
-            margin-top: 15px;
-            text-align: center;
-        }
-
-        .back a {
-            text-decoration: none;
-            color: #11998e;
-            font-weight: bold;
-        }
+        .step.active { background: #4ecdc4; transform: scale(1.2); }
     </style>
 </head>
 <body>
+    <div class="form">
+        <!-- مراحل -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div class="step active" id="step1"></div>
+            <div class="step" id="step2"></div>
+            <div class="step" id="step3"></div>
+        </div>
 
-<div class="box">
-    <h2>ثبت نام</h2>
+        <h2 style="text-align: center; margin-bottom: 20px;">ثبت‌نام</h2>
 
-    <input type="text" id="username" placeholder="نام کاربری">
-    <input type="email" id="email" placeholder="ایمیل (مثال: example@email.com)" dir="ltr">
-    <input type="tel" id="phone" placeholder="شماره موبایل (مثال: 09123456789)" dir="ltr">
-    <input type="password" id="password" placeholder="رمز عبور">
-    <input type="password" id="repassword" placeholder="تکرار رمز عبور">
+        <!-- پیام‌ها -->
+        <div id="successMsg" class="success"></div>
+        <div id="errorMsg" class="error"></div>
 
-    <button onclick="signup()">ثبت نام</button>
-
-    <div id="message" class="message"></div>
-
-    <div class="back">
-        <a href="index.html">بازگشت به صفحه ورود</a>
+        <!-- فرم -->
+        <form id="registerForm">
+            <input type="text" id="name" placeholder="نام کامل" required>
+            <input type="email" id="email" placeholder="ایمیل" required>
+            <input type="password" id="password" placeholder="رمز عبور" required>
+            
+            <button type="button" id="sendCodeBtn">📧 ارسال کد تأیید</button>
+            
+            <!-- تأیید کد -->
+            <div id="verifySection" style="display: none;">
+                <input type="text" id="verifyCode" placeholder="کد ۶ رقمی" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 10px;">
+                <button type="button" id="verifyBtn">✅ تأیید کد</button>
+            </div>
+            
+            <button type="submit" id="registerBtn" disabled>🎉 ثبت‌نام</button>
+        </form>
     </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js"></script>
-<script src="js/firebase-client.js"></script>
-<script>
-    async function signup() {
-        let username = document.getElementById("username").value.trim();
-        let email = document.getElementById("email").value.trim();
-        let phone = document.getElementById("phone").value.trim();
-        let password = document.getElementById("password").value;
-        let repassword = document.getElementById("repassword").value;
-        let message = document.getElementById("message");
+    <!-- 👇 SCRIPT مهم - دقیقاً اینجا 👇 -->
+    <script>
+        // 🔥 ۳ خط جادویی - فقط اینجا عوض کن!
+        const EMAILJS_CONFIG = {
+            publicKey: 'zYCifVUI7N8zCbdLV',     // از Account
+            serviceId: 'service_abc123def456xyz',      // از Email Services  
+            templateId: 'template_jydj2zf'     // از Email Templates
+        };
 
-        if (!window.firebaseClient) {
-            message.innerHTML = "❌ تنظیمات Firebase انجام نشده است";
-            message.className = "message error";
-            return;
-        }
+        // راه‌اندازی
+        emailjs.init(EMAILJS_CONFIG.publicKey);
+        
+        let emailVerified = false;
+        let generatedCode = null; // کد تصادفی هر بار ساخته می‌شود
 
-        if (!username || !email || !phone || !password || !repassword) {
-            message.innerHTML = "❌ لطفاً همه فیلدها را پر کنید";
-            message.className = "message error";
-            return;
-        }
-
-        let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            message.innerHTML = "❌ فرمت ایمیل وارد شده صحیح نیست";
-            message.className = "message error";
-            return;
-        }
-
-        let phoneRegex = /^09[0-9]{9}$/;
-        if (!phoneRegex.test(phone)) {
-            message.innerHTML = "❌ شماره موبایل باید با 09 شروع شود و ۱۱ رقم باشد";
-            message.className = "message error";
-            return;
-        }
-
-        if (password !== repassword) {
-            message.innerHTML = "❌ رمز عبور و تکرار آن یکسان نیست";
-            message.className = "message error";
-            return;
-        }
-
-        try {
-            // ابتدا کاربر را در Firebase Auth ثبت می‌کنیم
-            // یکتایی ایمیل توسط Firebase Auth بررسی می‌شود
-            const cred = await window.firebaseClient.auth.createUserWithEmailAndPassword(email, password);
-            const uid = cred.user.uid;
-
-            // ساخت پروفایل در Firestore
-            // نکته: role: "user" و isDeleted: false باید حتماً باشند (طبق Rules)
-            await window.firebaseClient.db.collection("users").doc(uid).set({
-                uid: uid,
-                username: username,
-                email: email,
-                phone: phone,
-                role: "user",
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                isDeleted: false
-            });
-
-            message.innerHTML = "✅ ثبت نام شما با موفقیت انجام شد";
-            message.className = "message success";
-
-            setTimeout(function() {
-                window.location.href = "Account.html";
-            }, 1500);
-        } catch (error) {
-            if (error.code === "auth/email-already-in-use") {
-                message.innerHTML = "❌ این ایمیل قبلاً ثبت شده است";
-            } else if (error.code === "auth/weak-password") {
-                message.innerHTML = "❌ رمز عبور باید حداقل ۶ کاراکتر باشد";
-            } else {
-                message.innerHTML = "❌ خطا در ثبت‌نام: " + error.message;
+        // بروزرسانی مراحل
+        function updateSteps(step) {
+            for(let i=1; i<=3; i++) {
+                document.getElementById(`step${i}`).classList.toggle('active', i == step);
             }
-            message.className = "message error";
         }
-    }
-</script>
 
+        // نمایش پیام
+        function showMessage(text, type) {
+            const success = document.getElementById('successMsg');
+            const error = document.getElementById('errorMsg');
+            [success, error].forEach((el, i) => {
+                el.textContent = text;
+                el.classList.toggle('show', i === (type === 'success' ? 0 : 1));
+            });
+        }
+
+        // ارسال کد
+        document.getElementById('sendCodeBtn').onclick = async () => {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            
+            if(!name || !email) {
+                showMessage('نام و ایمیل را پر کنید', 'error');
+                return;
+            }
+
+            try {
+                // ساخت کد ۶ رقمی تصادفی در فرانت
+                generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+                // ارسال واقعی ایمیل!
+                await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+                    to_email: email,
+                    to_name: name,
+                    verification_code: generatedCode
+                });
+                
+                document.getElementById('verifySection').style.display = 'block';
+                updateSteps(2);
+                // فقط پیام کلی بدون نمایش خود کد
+                showMessage('کد به ایمیل ارسال شد', 'success');
+                document.getElementById('verifyCode').focus();
+                
+            } catch(error) {
+                showMessage('خطا: ' + error.text, 'error');
+            }
+        };
+
+        // تأیید کد
+        document.getElementById('verifyBtn').onclick = () => {
+            const code = document.getElementById('verifyCode').value;
+            if(code === generatedCode) {
+                emailVerified = true;
+                updateSteps(3);
+                document.getElementById('registerBtn').disabled = false;
+                showMessage('✅ تأیید شد!', 'success');
+            } else {
+                showMessage('❌ کد اشتباه است', 'error');
+            }
+        };
+
+        // ثبت‌نام
+        document.getElementById('registerForm').onsubmit = (e) => {
+            e.preventDefault();
+            if(emailVerified) {
+                showMessage('🎉 ثبت‌نام موفق!', 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showMessage('ابتدا کد را تأیید کنید', 'error');
+            }
+        };
+
+        // فقط عدد
+        document.getElementById('verifyCode').oninput = (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0,6);
+        };
+    </script>
 </body>
 </html>

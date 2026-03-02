@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت‌نام | ارسال ایمیل واقعی</title>
+    
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Vazir', Tahoma, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .form-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            padding: 50px;
+            border-radius: 25px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .setup-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .setup-box h3 { margin-bottom: 10px; font-size: 18px; }
+        .setup-box ul { text-align: right; }
+        .setup-box li { margin: 5px 0; }
+        .form-header h2 {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 32px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 18px 25px;
+            border: 2px solid #e8f0fe;
+            border-radius: 15px;
+            font-size: 16px;
+            transition: all 0.4s ease;
+            background: rgba(248,250,252,0.8);
+            font-family: inherit;
+            direction: ltr;
+            text-align: left;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 0 0 4px rgba(78,205,196,0.15);
+        }
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+            box-shadow: 0 8px 25px rgba(255,107,107,0.3);
+        }
+        .btn-success {
+            background: linear-gradient(45deg, #4ecdc4, #44d3b8);
+            color: white;
+            box-shadow: 0 8px 25px rgba(78,205,196,0.3);
+        }
+        .btn:disabled {
+            background: #e0e6ed !important;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .verification-section {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 2px dashed #4ecdc4;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+            display: none;
+            box-shadow: inset 0 2px 10px rgba(78,205,196,0.1);
+        }
+        .verification-section.show {
+            display: block;
+            animation: slideUp 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        @keyframes slideUp {
+            0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .code-input {
+            letter-spacing: 15px;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            border-radius: 12px;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 35px;
+        }
+        .step {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e0e6ed;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+        .step.active {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            transform: scale(1.4);
+            box-shadow: 0 0 20px rgba(78,205,196,0.5);
+        }
+        .step.completed {
+            background: #4ecdc4;
+            transform: scale(1.2);
+        }
+        .alert {
+            padding: 20px 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 15px;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+        .alert.show {
+            display: block;
+            animation: bounceIn 0.6s ease;
+        }
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            60% { opacity: 1; transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .alert-success {
+            background: rgba(78,205,196,0.2);
+            color: #0f766e;
+            border: 1px solid #4ecdc4;
+            box-shadow: 0 8px 25px rgba(78,205,196,0.2);
+        }
+        .alert-error {
+            background: rgba(239,68,68,0.2);
+            color: #dc2626;
+            border: 1px solid #ff6b6b;
+            box-shadow: 0 8px 25px rgba(239,68,68,0.2);
+        }
+        @media (max-width: 480px) {
+            .form-container { padding: 30px 25px; }
+            .form-header h2 { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- راهنمای راه‌اندازی EmailJS -->
+        <div class="setup-box">
+            <h3>🚀 راه‌اندازی ۳ دقیقه‌ای</h3>
+            <ul>
+                <li>1️⃣ <a href="https://dashboard.emailjs.com/signup" target="_blank" style="color: #fff; text-decoration: underline;">EmailJS.com</a> ثبت‌نام</li>
+                <li>2️⃣ Gmail خود را متصل کنید</li>
+                <li>3️⃣ ۳ مقدار زیر را عوض کنید 👇</li>
+            </ul>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step active" id="step1"></div>
+            <div class="step" id="step2"></div>
+            <div class="step" id="step3"></div>
+        </div>
+
+        <!-- Header -->
+        <div class="form-header">
+            <h2>ثبت‌نام امن</h2>
+            <p>کد تأیید به ایمیل واقعی شما ارسال می‌شود</p>
+        </div>
+
+        <!-- Messages -->
+        <div class="alert alert-success" id="successMsg"></div>
+        <div class="alert alert-error" id="errorMsg"></div>
+
+        <!-- Form -->
+        <form id="registerForm">
+            <!-- Step 1: اطلاعات -->
+            <div id="step1-content">
+                <div class="form-group">
+                    <input type="text" id="name" placeholder="👤 نام کامل" required>
+                </div>
+                
+                <div class="form-group">
+                    <input type="email" id="email" placeholder="📧 example@gmail.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <input type="password" id="password" placeholder="🔒 رمز عبور (حداقل ۸)" minlength="8" required>
+                </div>
+
+                <button type="button" class="btn btn-primary" id="sendCodeBtn">
+                    📧 ارسال کد تأیید
+                </button>
+            </div>
+
+            <!-- Step 2: تأیید -->
+            <div id="step2-content" class="verification-section">
+                <h3 style="text-align: center; color: #0f766e; margin-bottom: 25px;">
+                    📬 کد ارسالی را وارد کنید
+                </h3>
+                <div class="form-group">
+                    <input type="text" class="code-input" id="verifyCode" placeholder="۱۲۳۴۵۶" maxlength="6" autocomplete="one-time-code">
+                </div>
+                <button type="button" class="btn btn-success" id="verifyBtn">
+                    ✅ تأیید کد
+                </button>
+            </div>
+
+            <!-- دکمه نهایی -->
+            <button type="submit" class="btn btn-success" id="registerBtn" disabled>
+                🎉 تکمیل ثبت‌نام
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // ⚙️ تنظیمات EmailJS - مقادیر خود را جایگزین کنید
+        const EMAILJS_CONFIG = {
+            publicKey: 'zYCifVUI7N8zCbdLV',      // ← از EmailJS Dashboard
+            serviceId: 'service_abc123def456xyz',      // ← از Email Services  
+            templateId: 'template_jydj2zf'     // ← از Email Templates
+        };
+
+        // راه‌اندازی EmailJS
+        emailjs.init(EMAILJS_CONFIG.publicKey);
+
+        let emailVerified = false;
+        let generatedCode = '';
+        let verificationTimeout = null;
+
+        // تولید کد 6 رقمی
+        function generateCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // بروزرسانی مراحل
+        function updateSteps(step) {
+            document.querySelectorAll('.step').forEach((s, index) => {
+                s.classList.remove('active', 'completed');
+                if (index < step - 1) {
+                    s.classList.add('completed');
+                } else if (index === step - 1) {
+                    s.classList.add('active');
+                }
+            });
+        }
+
+        // نمایش پیام
+        function showMessage(message, type) {
+            const successMsg = document.getElementById('successMsg');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (type === 'success') {
+                successMsg.innerHTML = `✅ ${message}`;
+                successMsg.classList.add('show');
+                errorMsg.classList.remove('show');
+            } else {
+                errorMsg.innerHTML = `❌ ${message}`;
+                errorMsg.classList.add('show');
+                successMsg.classList.remove('show');
+            }
+            
+            setTimeout(() => {
+                successMsg.classList.remove('show');
+                errorMsg.classList.remove('show');
+            }, 6000);
+        }
+
+        // ارسال **واقعی** ایمیل
+        document.getElementById('sendCodeBtn').addEventListener('click', async function() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            // اعتبارسنجی
+            if (!name || !email || !password || password.length < 8) {
+                showMessage('لطفاً همه فیلدها را کامل کنید', 'error');
+                return;
+            }
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showMessage('فرمت ایمیل صحیح نیست', 'error');
+                return;
+            }
+
+            // غیرفعال کردن دکمه
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ در حال ارسال...';
+
+            try {
+                generatedCode = generateCode();
+                
+                // **ارسال واقعی ایمیل با EmailJS**
+                const response = await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+                    to_email: email,
+                    to_name: name,
+                    verification_code: generatedCode,
+                    user_ip: 'client-browser'
+                });
+
+                // موفقیت!
+                document.getElementById('step2-content').classList.add('show');
+                updateSteps(2);
+                showMessage(`کد تأیید به ${email} ارسال شد!`, 'success');
+                document.getElementById('verifyCode').focus();
+
+                // تایمر انقضا (5 دقیقه)
+                clearTimeout(verificationTimeout);
+                verificationTimeout = setTimeout(() => {
+                    showMessage('کد منقضی شد. دوباره ارسال کنید', 'error');
+                }, 300000); // 5 دقیقه
+
+            } catch (error) {
+                console.error('EmailJS Error:', error);
+                showMessage(`خطا در ارسال: ${error.text || 'مشکل شبکه'}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+
+        // تأیید کد
+        document.getElementById('verifyBtn').addEventListener('click', function() {
+            const inputCode = document.getElementById('verifyCode').value.replace(/\D/g, '').trim();
+            
+            if (inputCode.length !== 6) {
+                showMessage('کد باید ۶ رقم باشد', 'error');
+                return;
+            }
+
+            if (inputCode === generatedCode) {
+                emailVerified = true;
+                document.getElementById('verifyCode').value = '';
+                updateSteps(3);
+                document.getElementById('registerBtn').disabled = false;
+                showMessage('🎉 ایمیل با موفقیت تأیید شد!', 'success');
+                clearTimeout(verificationTimeout);
+            } else {
+                showMessage('کد وارد شده اشتباه است', 'error');
+                document.getElementById('verifyCode').value = '';
+                document.getElementById('verifyCode').focus();
+            }
+        });
+
+        // ثبت‌نام نهایی
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!emailVerified) {
+                showMessage('⚠️ ابتدا کد تأیید ایمیل را وارد کنید', 'error');
+                document.getElementById('step2-content').classList.add('show');
+                updateSteps(2);
+                return;
+            }
+
+            // شبیه‌سازی ذخیره در دیتابیس
+            showMessage('🎊 ثبت‌نام با موفقیت انجام شد!<br>خوش آمدید به سایت ما 🌟', 'success');
+            
+            // ریست فرم
+            setTimeout(() => {
+                this.reset();
+                emailVerified = false;
+                generatedCode = '';
+                updateSteps(1);
+                document.getElementById('step2-content').classList.remove('show');
+                document.getElementById('registerBtn').disabled = true;
+            }, 3000);
+        });
+
+        // بهبود UX
+        document.getElementById('verifyCode').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        });
+
+        document.getElementById('verifyCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('verifyBtn').click();
+            }
+        });
+
+        // تست EmailJS
+        console.log('✅ EmailJS آماده است - Public Key را تنظیم کنید');
+    </script>
+</body>
+</html>
