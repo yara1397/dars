@@ -304,7 +304,13 @@
             try {
                 const { auth, db } = window.firebaseClient;
 
-                // ۱. ساخت اکانت در Firebase Authentication
+                // ۱. بررسی مسدود بودن ایمیل
+                const bannedSnap = await db.collection('bannedUsers').where('email', '==', email).get();
+                if (!bannedSnap.empty) {
+                    throw { message: 'این ایمیل توسط مدیریت مسدود شده است' };
+                }
+
+                // ۲. ساخت اکانت در Firebase Authentication
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const user = userCredential.user;
 
@@ -319,6 +325,7 @@
                     email: email,
                     phone: '',
                     role: 'user',
+                    isDeleted: false,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 

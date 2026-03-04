@@ -166,33 +166,23 @@ async function deleteUser(docId, uid, username) {
     if (!confirm("آیا از حذف کاربر «" + username + "» مطمئن هستید؟")) return;
 
     try {
-        const deleteUserFunctionUrl = window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.deleteUserFunctionUrl;
+        const { db } = window.firebaseClient;
 
-        if (!deleteUserFunctionUrl) {
-            throw new Error("deleteUserFunctionUrl در js/firebase-config.js تنظیم نشده است");
-        }
+        // گرفتن ایمیل کاربر قبل از حذف
+        const userDoc = await db.collection("users").doc(docId).get();
+        const userEmail = userDoc.exists ? userDoc.data().email : null;
 
-        const adminUser = window.firebaseClient.auth.currentUser;
-        if (!adminUser) {
-            throw new Error("برای حذف واقعی باید ادمین Firebase لاگین باشد");
-        }
+        // ۱. حذف سند کاربر از Firestore
+        await db.collection("users").doc(docId).delete();
 
-        const adminToken = await adminUser.getIdToken();
-        const response = await fetch(deleteUserFunctionUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + adminToken
-            },
-            body: JSON.stringify({ uid: uid })
+        // ۲. ذخیره در bannedUsers تا نتواند دوباره ثبت‌نام کند
+        await db.collection("bannedUsers").doc(uid).set({
+            uid: uid,
+            email: userEmail || "",
+            bannedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        const result = await response.json();
-        if (!response.ok || !result || result.ok !== true) {
-            throw new Error((result && result.message) || "حذف واقعی کاربر انجام نشد");
-        }
-
-        await window.firebaseClient.db.collection("users").doc(docId).delete();
+        alert("✅ کاربر «" + username + "» با موفقیت حذف شد");
         loadUsers();
     } catch (error) {
         alert("خطا در حذف کاربر: " + error.message);

@@ -16,25 +16,30 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // ساخت پروفایل: کاربر فقط برای خودش، با role=user و isDeleted=false
+      // ساخت پروفایل: کاربر فقط برای خودش با role=user
       allow create: if isOwner(userId)
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role == "user"
-        && request.resource.data.isDeleted == false;
+        && request.resource.data.role == "user";
 
-      // خواندن: کاربر فقط پروفایل خودش
+      // خواندن: کاربر پروفایل خودش
       allow read: if isOwner(userId);
 
-      // آپدیت: کاربر فقط پروفایل خودش، بدون تغییر فیلدهای حساس
+      // آپدیت: کاربر فقط فیلدهای غیرحساس
       allow update: if isOwner(userId)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && request.resource.data.role == resource.data.role
         && request.resource.data.createdAt == resource.data.createdAt;
 
-      // ادمین: دسترسی کامل به همه پروفایل‌ها
+      // ادمین: دسترسی کامل
       allow read, update, delete: if isAdmin();
+    }
+
+    // کالکشن bannedUsers: فقط ادمین می‌تواند بنویسد، همه می‌توانند بخوانند
+    match /bannedUsers/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }
