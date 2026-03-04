@@ -315,8 +315,10 @@
                 await db.collection('users').doc(user.uid).set({
                     uid: user.uid,
                     name: name,
+                    username: name,
                     email: email,
-                    role: 'student',
+                    phone: '',
+                    role: 'user',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
